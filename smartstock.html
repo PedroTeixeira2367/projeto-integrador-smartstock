@@ -1,0 +1,2585 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartStock — Gestão inteligente</title>
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons via CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#EEF4FF',
+              100: '#DCE8FF',
+              500: '#2563EB',
+              600: '#1D4ED8',
+            },
+            surface: '#F8FAFC',
+          },
+          boxShadow: {
+            'card': '0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.03)',
+            'modal': '0 20px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.08)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #F8FAFC;
+      color: #0F172A;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94A3B8;
+    }
+
+    /* Smooth modal transition */
+    .modal-backdrop {
+      transition: opacity 0.2s ease, visibility 0.2s ease;
+    }
+    .modal-panel {
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+    }
+  </style>
+</head>
+<body class="bg-[#F8FAFC] text-[#0F172A] min-h-screen flex overflow-x-hidden">
+
+  <!-- Mobile Sidebar Overlay -->
+  <div id="mobile-sidebar-overlay" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-30 hidden lg:hidden"></div>
+
+  <!-- SIDEBAR FIXA (260px) -->
+  <aside id="sidebar" class="fixed lg:sticky top-0 left-0 z-40 h-screen w-[260px] shrink-0 bg-white border-r border-[#E2E8F0] flex flex-col justify-between transition-transform duration-200 -translate-x-full lg:translate-x-0">
+    <!-- Top & Navigation -->
+    <div class="p-5">
+      <!-- Logo -->
+      <div class="flex items-center justify-between mb-8">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-[#1D5BFF] flex items-center justify-center shadow-xs">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="4" y="10" width="3.5" height="9" rx="1.75" fill="white"/>
+              <rect x="10.25" y="5" width="3.5" height="14" rx="1.75" fill="white"/>
+              <rect x="16.5" y="13" width="3.5" height="6" rx="1.75" fill="white"/>
+            </svg>
+          </div>
+          <div>
+            <div class="font-bold text-[16px] leading-tight text-slate-900 tracking-tight">SmartStock</div>
+            <div class="text-[11.5px] text-slate-400 font-normal mt-0.5">Gestão inteligente</div>
+          </div>
+        </div>
+        <button onclick="toggleMobileSidebar()" class="lg:hidden p-1.5 rounded-lg text-slate-400 hover:bg-slate-100">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- MENU PRINCIPAL -->
+      <div class="mb-6">
+        <p class="px-3 mb-2.5 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">Menu Principal</p>
+        <nav class="space-y-1">
+          <button onclick="navigateTo('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13.5px] font-medium transition-colors bg-[#EEF4FF] text-[#1D5BFF]">
+            <span class="flex items-center gap-3">
+              <i data-lucide="layout-grid" class="w-[18px] h-[18px]"></i>
+              Visão geral
+            </span>
+          </button>
+
+          <button onclick="navigateTo('produtos')" id="nav-produtos" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13.5px] font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors">
+            <span class="flex items-center gap-3">
+              <i data-lucide="box" class="w-[18px] h-[18px]"></i>
+              Produtos
+            </span>
+            <span id="sidebar-products-badge" class="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-slate-100 text-slate-600">0</span>
+          </button>
+
+          <button onclick="navigateTo('movimentacoes')" id="nav-movimentacoes" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13.5px] font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors">
+            <span class="flex items-center gap-3">
+              <i data-lucide="arrow-left-right" class="w-[18px] h-[18px]"></i>
+              Movimentações
+            </span>
+          </button>
+
+          <button onclick="navigateTo('relatorios')" id="nav-relatorios" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13.5px] font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors">
+            <span class="flex items-center gap-3">
+              <i data-lucide="bar-chart-2" class="w-[18px] h-[18px]"></i>
+              Relatórios
+            </span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- INTELIGÊNCIA -->
+      <div>
+        <p class="px-3 mb-2.5 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">Inteligência</p>
+        <nav class="space-y-1">
+          <button onclick="navigateTo('ia')" id="nav-ia" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13.5px] font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors">
+            <span class="flex items-center gap-3">
+              <i data-lucide="sparkles" class="w-[18px] h-[18px]"></i>
+              Assistente IA
+            </span>
+            <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-emerald-50 text-emerald-600">Novo</span>
+          </button>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Footer da Sidebar -->
+    <div class="p-4 border-t border-slate-100 space-y-4">
+      <!-- Capacidade do estoque -->
+      <div class="px-1">
+        <div class="flex items-center justify-between text-[12px] mb-1.5">
+          <span class="font-medium text-slate-600">Capacidade do estoque</span>
+          <span id="capacity-percent" class="font-bold text-slate-900">0%</span>
+        </div>
+        <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div id="capacity-bar" class="h-full bg-[#1D5BFF] rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+        <p id="capacity-units" class="text-[11px] text-slate-400 mt-1.5">0 de 25.000 unidades</p>
+      </div>
+
+      <!-- Perfil do Usuário -->
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-between px-1">
+        <button type="button" onclick="navigateTo('perfil')" class="flex items-center gap-2.5 text-left min-w-0 flex-1 rounded-xl p-1 -ml-1 hover:bg-slate-50 transition-colors cursor-pointer group">
+          <div id="sidebar-avatar" class="w-9 h-9 rounded-full bg-[#EEF4FF] text-[#1D5BFF] font-semibold text-[12px] flex items-center justify-center shrink-0 overflow-hidden">
+            RM
+          </div>
+          <div class="min-w-0">
+            <div id="sidebar-user-name" class="text-[13px] font-semibold text-slate-900 truncate group-hover:text-[#1D5BFF] transition-colors">Rafael Martins</div>
+            <div id="sidebar-user-role" class="text-[11px] text-slate-400 truncate">Administrador</div>
+          </div>
+        </button>
+        <button type="button" onclick="navigateTo('perfil')" title="Configurações da conta" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer">
+          <i data-lucide="more-horizontal" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ÁREA DE CONTEÚDO PRINCIPAL -->
+  <div class="flex-1 flex flex-col min-w-0">
+
+    <!-- HEADER SUPERIOR (Sticky) -->
+    <header class="sticky top-0 z-20 bg-[#F8FAFC]/90 backdrop-blur-md border-b border-slate-200/70 px-4 sm:px-8 py-4">
+      <div class="max-w-[1440px] mx-auto flex items-center justify-between gap-4">
+        <!-- Esquerda: Botão mobile + Título Dinâmico & Data -->
+        <div class="flex items-center gap-3">
+          <button onclick="toggleMobileSidebar()" class="lg:hidden p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50">
+            <i data-lucide="menu" class="w-5 h-5"></i>
+          </button>
+          <div>
+            <h1 id="header-title" class="text-[18px] font-semibold text-slate-900 leading-tight">Visão geral</h1>
+            <p class="text-[12px] text-slate-400 mt-0.5">Quinta-feira, 12 de junho de 2025</p>
+          </div>
+        </div>
+
+        <!-- Direita: Busca Global, Sino e Avatar -->
+        <div class="flex items-center gap-3">
+          <div class="relative hidden sm:block w-64 md:w-72">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            <input
+              id="global-search-input"
+              type="text"
+              placeholder="Buscar no SmartStock..."
+              onkeyup="handleGlobalSearch(event)"
+              class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200/90 rounded-xl text-[13px] text-slate-700 placeholder-slate-400 focus:outline-none focus:border-[#1D5BFF] focus:ring-2 focus:ring-[#1D5BFF]/10 transition-all"
+            />
+          </div>
+
+          <!-- Notificações -->
+          <div class="relative">
+            <button onclick="toggleNotificationsPopover()" class="w-10 h-10 rounded-xl bg-white border border-slate-200/90 flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-colors relative">
+              <i data-lucide="bell" class="w-[18px] h-[18px]"></i>
+              <span id="notif-dot" class="hidden w-2 h-2 rounded-full bg-rose-500 absolute top-2.5 right-2.5"></span>
+            </button>
+            <!-- Dropdown rápido de notificações -->
+            <div id="notifications-popover" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-2xl border border-slate-200 shadow-lg p-4 z-50">
+              <div class="flex items-center justify-between pb-2.5 mb-2.5 border-b border-slate-100">
+                <span class="text-[13px] font-semibold text-slate-900">Alertas recentes</span>
+                <span id="notif-count-badge" class="text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">0 itens</span>
+              </div>
+              <div id="notif-list" class="space-y-2.5 max-h-60 overflow-y-auto text-[12px]"></div>
+            </div>
+          </div>
+
+          <!-- Avatar RM (Abre configurações da conta) -->
+          <button type="button" onclick="navigateTo('perfil')" title="Configurações da conta" class="w-10 h-10 rounded-full bg-[#EEF4FF] text-[#1D5BFF] font-semibold text-[13px] flex items-center justify-center shrink-0 border border-[#DCE8FF] hover:ring-2 hover:ring-[#1D5BFF]/20 transition-all cursor-pointer overflow-hidden" id="header-avatar">
+            RM
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="flex-1 px-4 sm:px-8 py-6 max-w-[1440px] w-full mx-auto">
+
+      <!-- ========================================================= -->
+      <!-- VIEW 1: VISÃO GERAL (DASHBOARD)                           -->
+      <!-- ========================================================= -->
+      <section id="view-dashboard" class="space-y-6">
+        <!-- Saudação + CTA -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-[22px] sm:text-[24px] font-bold tracking-tight text-slate-900">
+              Olá, <span id="dashboard-first-name">Rafael</span>! <span class="font-medium text-slate-400">Tudo sob controle.</span>
+            </h2>
+            <p class="text-[13.5px] text-slate-400 mt-1">Acompanhe os principais indicadores da sua operação.</p>
+          </div>
+          <button onclick="openMovementModal()" class="inline-flex items-center justify-center gap-2 bg-[#1D5BFF] hover:bg-[#1649D8] text-white font-medium text-[13.5px] px-4 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer shrink-0">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            Nova movimentação
+          </button>
+        </div>
+
+        <!-- 4 CARDS DE KPIs -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5">
+          <!-- KPI 1 -->
+          <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-card flex items-start justify-between">
+            <div>
+              <p class="text-[12.5px] font-medium text-slate-500">Valor total em estoque</p>
+              <p id="kpi-total-value" class="text-[22px] font-bold text-slate-900 mt-2 tracking-tight">R$ 0,00</p>
+              <div id="kpi-value-sub" class="flex items-center gap-1 text-[12px] font-medium text-slate-400 mt-2.5">
+                <span>Nenhum valor em estoque</span>
+              </div>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-[#EEF4FF] text-[#1D5BFF] flex items-center justify-center shrink-0">
+              <i data-lucide="banknote" class="w-5 h-5"></i>
+            </div>
+          </div>
+
+          <!-- KPI 2 -->
+          <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-card flex items-start justify-between">
+            <div>
+              <p class="text-[12.5px] font-medium text-slate-500">Produtos cadastrados</p>
+              <p id="kpi-total-products" class="text-[22px] font-bold text-slate-900 mt-2 tracking-tight">0</p>
+              <div id="kpi-products-sub" class="flex items-center gap-1 text-[12px] font-medium text-slate-400 mt-2.5">
+                <span>Nenhum produto cadastrado</span>
+              </div>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+              <i data-lucide="box" class="w-5 h-5"></i>
+            </div>
+          </div>
+
+          <!-- KPI 3 -->
+          <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-card flex items-start justify-between">
+            <div>
+              <p class="text-[12.5px] font-medium text-slate-500">Itens com estoque baixo</p>
+              <p id="kpi-low-stock" class="text-[22px] font-bold text-slate-900 mt-2 tracking-tight">0</p>
+              <div id="kpi-low-sub" class="flex items-center gap-1 text-[12px] font-medium text-slate-400 mt-2.5">
+                <span>Nenhum alerta ativo</span>
+              </div>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center shrink-0">
+              <i data-lucide="chevron-down" class="w-5 h-5"></i>
+            </div>
+          </div>
+
+          <!-- KPI 4 -->
+          <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-card flex items-start justify-between">
+            <div>
+              <p class="text-[12.5px] font-medium text-slate-500">Movimentações no mês</p>
+              <p id="kpi-month-movements" class="text-[22px] font-bold text-slate-900 mt-2 tracking-tight">0</p>
+              <div id="kpi-movements-sub" class="flex items-center gap-1 text-[12px] font-medium text-slate-400 mt-2.5">
+                <span>Sem registros no período</span>
+              </div>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+              <i data-lucide="arrow-left-right" class="w-5 h-5"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- SEÇÃO CENTRAL: GRÁFICO (68%) + ALERTAS (32%) -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          <!-- Card Gráfico: Movimentação do estoque -->
+          <div class="lg:col-span-8 bg-white rounded-2xl border border-slate-200/80 p-6 shadow-card flex flex-col justify-between">
+            <div>
+              <div class="flex flex-wrap items-start justify-between gap-3 mb-4">
+                <div>
+                  <h3 class="text-[15.5px] font-semibold text-slate-900">Movimentação do estoque</h3>
+                  <p class="text-[12.5px] text-slate-400 mt-0.5">Entradas e saídas nos últimos 7 meses</p>
+                </div>
+                <div class="relative">
+                  <select id="chart-period-select" onchange="updateChartPeriod(this.value)" class="appearance-none bg-white border border-slate-200 rounded-xl pl-3.5 pr-8 py-1.5 text-[12.5px] font-medium text-slate-700 focus:outline-none focus:border-[#1D5BFF] cursor-pointer">
+                    <option value="7m">Últimos 7 meses</option>
+                    <option value="6m">Últimos 6 meses</option>
+                    <option value="year">Ano atual (2025)</option>
+                  </select>
+                  <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                </div>
+              </div>
+
+              <!-- Legenda customizada à direita -->
+              <div class="flex items-center justify-end gap-5 text-[12px] text-slate-500 mb-3">
+                <span class="flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-[#1D5BFF]"></span>
+                  Entradas
+                </span>
+                <span class="flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+                  Saídas
+                </span>
+              </div>
+            </div>
+
+            <!-- Canvas Chart.js -->
+            <div class="relative w-full h-[250px] sm:h-[270px]">
+              <canvas id="stockMovementChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Card Alertas de estoque -->
+          <div class="lg:col-span-4 bg-white rounded-2xl border border-slate-200/80 p-6 shadow-card flex flex-col justify-between">
+            <div>
+              <div class="flex items-start justify-between gap-2 mb-5">
+                <div>
+                  <h3 class="text-[15.5px] font-semibold text-slate-900">Alertas de estoque</h3>
+                  <p class="text-[12.5px] text-slate-400 mt-0.5">Produtos abaixo do nível mínimo</p>
+                </div>
+                <button onclick="navigateTo('produtos', 'Estoque baixo')" class="text-[12.5px] font-semibold text-[#1D5BFF] hover:underline shrink-0">
+                  Ver todos
+                </button>
+              </div>
+
+              <!-- Lista Dinâmica de Alertas -->
+              <div id="dashboard-alerts-list" class="divide-y divide-slate-100">
+                <!-- Preenchido via JS -->
+              </div>
+            </div>
+
+            <button onclick="navigateTo('produtos', 'Estoque baixo')" class="mt-5 w-full py-2.5 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[13px] font-semibold text-slate-700 flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
+              <span>Gerenciar alertas</span>
+              <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- SEÇÃO INFERIOR: MOVIMENTAÇÕES RECENTES -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-card overflow-hidden">
+          <div class="p-6 pb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 class="text-[15.5px] font-semibold text-slate-900">Movimentações recentes</h3>
+              <p class="text-[12.5px] text-slate-400 mt-0.5">Últimas atividades registradas no estoque</p>
+            </div>
+            <button onclick="navigateTo('movimentacoes')" class="inline-flex items-center gap-1 text-[12.5px] font-semibold text-[#1D5BFF] hover:underline">
+              <span>Ver histórico completo</span>
+              <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-y border-slate-100 bg-slate-50/60 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                  <th class="py-3 px-6">Tipo</th>
+                  <th class="py-3 px-6">Produto</th>
+                  <th class="py-3 px-6">Referência</th>
+                  <th class="py-3 px-6">Quantidade</th>
+                  <th class="py-3 px-6">Data e Hora</th>
+                  <th class="py-3 px-6">Responsável</th>
+                </tr>
+              </thead>
+              <tbody id="recent-movements-tbody" class="divide-y divide-slate-100 text-[13px]">
+                <!-- Preenchido via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- VIEW 2: CATÁLOGO DE PRODUTOS                              -->
+      <!-- ========================================================= -->
+      <section id="view-produtos" class="hidden space-y-6">
+        <!-- Cabeçalho da Página -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-[22px] sm:text-[24px] font-bold tracking-tight text-slate-900">Catálogo de produtos</h2>
+            <p class="text-[13.5px] text-slate-400 mt-1">Gerencie itens, preços e níveis mínimos do seu estoque.</p>
+          </div>
+          <button onclick="openProductModal()" class="inline-flex items-center justify-center gap-2 bg-[#1D5BFF] hover:bg-[#1649D8] text-white font-medium text-[13.5px] px-4 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer shrink-0">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            Cadastrar produto
+          </button>
+        </div>
+
+        <!-- Card da Tabela de Produtos -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-card overflow-hidden">
+          <!-- Barra de Filtros -->
+          <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-wrap items-center gap-3">
+            <div class="relative flex-1 min-w-[240px] max-w-sm">
+              <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+              <input
+                id="product-search-input"
+                type="text"
+                placeholder="Buscar por nome, SKU ou categoria..."
+                oninput="renderProductsTable()"
+                class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-[13px] text-slate-700 placeholder-slate-400 focus:outline-none focus:border-[#1D5BFF] focus:ring-2 focus:ring-[#1D5BFF]/10"
+              />
+            </div>
+
+            <div class="relative">
+              <select id="product-category-filter" onchange="renderProductsTable()" class="appearance-none bg-white border border-slate-200 rounded-xl pl-3.5 pr-9 py-2 text-[13px] font-medium text-slate-700 focus:outline-none focus:border-[#1D5BFF] cursor-pointer">
+                <option value="all">Todas as categorias</option>
+                <option value="Eletrônicos">Eletrônicos</option>
+                <option value="Informática">Informática</option>
+                <option value="Mobiliário">Mobiliário</option>
+                <option value="Escritório">Escritório</option>
+              </select>
+              <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            </div>
+
+            <div class="relative">
+              <select id="product-status-filter" onchange="renderProductsTable()" class="appearance-none bg-white border border-slate-200 rounded-xl pl-3.5 pr-9 py-2 text-[13px] font-medium text-slate-700 focus:outline-none focus:border-[#1D5BFF] cursor-pointer">
+                <option value="all">Todos os status</option>
+                <option value="Normal">Normal</option>
+                <option value="Estoque baixo">Estoque baixo</option>
+              </select>
+              <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            </div>
+          </div>
+
+          <!-- Tabela -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-100 bg-slate-50/60 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                  <th class="py-3.5 px-6">Produto</th>
+                  <th class="py-3.5 px-6">SKU</th>
+                  <th class="py-3.5 px-6">Categoria</th>
+                  <th class="py-3.5 px-6">Estoque</th>
+                  <th class="py-3.5 px-6">Valor Unitário</th>
+                  <th class="py-3.5 px-6">Status</th>
+                  <th class="py-3.5 px-6 text-right"></th>
+                </tr>
+              </thead>
+              <tbody id="products-tbody" class="divide-y divide-slate-100 text-[13px]">
+                <!-- Preenchido via JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Rodapé / Paginação -->
+          <div class="px-6 py-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-[12.5px] text-slate-400">
+            <p id="products-pagination-info">Mostrando 0 de 0 produtos</p>
+            <div class="flex items-center gap-1.5">
+              <button onclick="changePage('prev')" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 font-medium transition-colors">Anterior</button>
+              <button onclick="setPage(1)" id="page-btn-1" class="page-btn w-8 h-8 rounded-lg bg-[#1D5BFF] text-white font-semibold transition-colors">1</button>
+              <button onclick="setPage(2)" id="page-btn-2" class="page-btn w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 font-medium transition-colors">2</button>
+              <button onclick="setPage(3)" id="page-btn-3" class="page-btn w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 font-medium transition-colors">3</button>
+              <button onclick="changePage('next')" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 font-medium transition-colors">Próximo</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- VIEW 3: MOVIMENTAÇÕES (HISTÓRICO COMPLETO)                -->
+      <!-- ========================================================= -->
+      <section id="view-movimentacoes" class="hidden space-y-6">
+        <!-- Cabeçalho da Página -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-[22px] sm:text-[24px] font-bold tracking-tight text-slate-900">Movimentações de estoque</h2>
+            <p class="text-[13.5px] text-slate-400 mt-1">Rastreie todas as entradas e saídas da operação.</p>
+          </div>
+          <button onclick="openMovementModal()" class="inline-flex items-center justify-center gap-2 bg-[#1D5BFF] hover:bg-[#1649D8] text-white font-medium text-[13.5px] px-4 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer shrink-0">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            Nova movimentação
+          </button>
+        </div>
+
+        <!-- 3 Cards de KPIs -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+          <!-- KPI Entradas este mês -->
+          <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-card flex items-start justify-between">
+            <div>
+              <p class="text-[12.5px] font-medium text-slate-500">Entradas este mês</p>
+              <p id="mov-kpi-entradas" class="text-[22px] font-bold text-slate-900 mt-2 tracking-tight">0 un.</p>
+              <p id="mov-kpi-entradas-sub" class="text-[12px] font-medium text-slate-400 mt-2.5">Nenhuma entrada registrada</p>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+              <i data-lucide="chevron-down" class="w-5 h-5"></i>
+            </div>
+          </div>
+
+          <!-- KPI Saídas este mês -->
+          <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-card flex items-start justify-between">
+            <div>
+              <p class="text-[12.5px] font-medium text-slate-500">Saídas este mês</p>
+              <p id="mov-kpi-saidas" class="text-[22px] font-bold text-slate-900 mt-2 tracking-tight">0 un.</p>
+              <p id="mov-kpi-pedidos" class="text-[12px] font-normal text-slate-400 mt-2.5">0 pedidos atendidos</p>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center shrink-0">
+              <i data-lucide="chevron-up" class="w-5 h-5"></i>
+            </div>
+          </div>
+
+          <!-- KPI Saldo do período -->
+          <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-card flex items-start justify-between">
+            <div>
+              <p class="text-[12.5px] font-medium text-slate-500">Saldo do período</p>
+              <p id="mov-kpi-saldo" class="text-[22px] font-bold text-slate-900 mt-2 tracking-tight">0 un.</p>
+              <p id="mov-kpi-balanco-label" class="text-[12px] font-medium text-slate-400 mt-2.5">Sem movimentações</p>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-[#EEF4FF] text-[#1D5BFF] flex items-center justify-center shrink-0">
+              <i data-lucide="arrow-left-right" class="w-5 h-5"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card Principal: Histórico de movimentações -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-card overflow-hidden">
+          <div class="p-6 pb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 class="text-[15.5px] font-semibold text-slate-900">Histórico de movimentações</h3>
+              <p class="text-[12.5px] text-slate-400 mt-0.5">Registros atualizados em tempo real</p>
+            </div>
+            <button onclick="exportMovementsCSV()" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[13px] font-medium text-slate-700 transition-colors cursor-pointer">
+              <i data-lucide="download" class="w-4 h-4 text-slate-500"></i>
+              <span>Exportar</span>
+            </button>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-y border-slate-100 bg-slate-50/60 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                  <th class="py-3.5 px-6">Tipo</th>
+                  <th class="py-3.5 px-6">Produto</th>
+                  <th class="py-3.5 px-6">Referência</th>
+                  <th class="py-3.5 px-6">Quantidade</th>
+                  <th class="py-3.5 px-6">Data e Hora</th>
+                  <th class="py-3.5 px-6">Responsável</th>
+                </tr>
+              </thead>
+              <tbody id="full-movements-tbody" class="divide-y divide-slate-100 text-[13px]"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- VIEW 4: CENTRAL DE RELATÓRIOS                             -->
+      <!-- ========================================================= -->
+      <section id="view-relatorios" class="hidden space-y-6">
+        <!-- Cabeçalho da Página -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-[22px] sm:text-[24px] font-bold tracking-tight text-slate-900">Central de relatórios</h2>
+            <p class="text-[13.5px] text-slate-400 mt-1">Transforme dados operacionais em decisões mais inteligentes.</p>
+          </div>
+          <button onclick="openCreateReportModal()" class="inline-flex items-center justify-center gap-2 bg-[#1D5BFF] hover:bg-[#1649D8] text-white font-medium text-[13.5px] px-4 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer shrink-0">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            Criar relatório
+          </button>
+        </div>
+
+        <!-- Banner Hero Azul Escuro -->
+        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#133898] via-[#1946BA] to-[#1D5BFF] p-7 sm:p-9 text-white shadow-card flex flex-col md:flex-row md:items-center justify-between gap-8">
+          <!-- Decoração circular sutil ao fundo -->
+          <div class="pointer-events-none absolute -right-12 -bottom-24 w-80 h-80 rounded-full bg-white/[0.04]"></div>
+          <div class="pointer-events-none absolute right-36 -top-20 w-64 h-64 rounded-full bg-white/[0.03]"></div>
+
+          <!-- Texto e CTA à esquerda -->
+          <div class="relative z-10 max-w-lg">
+            <span class="inline-block text-[11px] font-semibold tracking-widest uppercase text-blue-200/90 mb-2.5">Visão Gerencial</span>
+            <h3 class="text-[24px] sm:text-[28px] font-bold tracking-tight leading-tight text-white">Dados claros. Decisões melhores.</h3>
+            <p class="text-[13.5px] text-blue-100/85 mt-2.5 leading-relaxed">Analise a saúde do seu estoque e identifique oportunidades em poucos cliques.</p>
+
+            <button onclick="openCompleteReportPreview()" class="mt-6 inline-flex items-center gap-2 bg-white hover:bg-blue-50 text-[#1649D8] font-semibold text-[13px] px-4 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer">
+              <span>Gerar relatório completo</span>
+              <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <!-- Ilustração Vetorial: 7 barras verticais translúcidas à direita -->
+          <div class="relative z-10 hidden sm:flex items-end gap-2.5 h-32 px-4 pt-4 border-b border-white/20 shrink-0 self-end md:self-center">
+            <div class="w-4 h-12 rounded-t-sm bg-gradient-to-t from-white/15 to-white/60"></div>
+            <div class="w-4 h-20 rounded-t-sm bg-gradient-to-t from-white/15 to-white/65"></div>
+            <div class="w-4 h-14 rounded-t-sm bg-gradient-to-t from-white/15 to-white/55"></div>
+            <div class="w-4 h-24 rounded-t-sm bg-gradient-to-t from-white/15 to-white/70"></div>
+            <div class="w-4 h-16 rounded-t-sm bg-gradient-to-t from-white/15 to-white/60"></div>
+            <div class="w-4 h-28 rounded-t-sm bg-gradient-to-t from-white/15 to-white/75"></div>
+            <div class="w-4 h-22 rounded-t-sm bg-gradient-to-t from-white/15 to-white/65"></div>
+          </div>
+        </div>
+
+        <!-- Grid de 4 Cards de Relatórios -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5">
+          <!-- Card 1: Posição atual do estoque -->
+          <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-card flex flex-col justify-between hover:border-slate-300/90 transition-all">
+            <div>
+              <div class="w-10 h-10 rounded-xl bg-[#EEF4FF] text-[#1D5BFF] flex items-center justify-center mb-4">
+                <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+              </div>
+              <h4 class="font-semibold text-slate-900 text-[14.5px]">Posição atual do estoque</h4>
+              <p class="text-[12.5px] text-slate-400 mt-1.5 leading-relaxed">Visão consolidada de quantidades e valores por produto.</p>
+            </div>
+            <div class="mt-6 pt-3.5 border-t border-slate-100 flex items-center justify-between text-[11.5px] text-slate-400">
+              <span>Atualizado agora</span>
+              <button onclick="downloadSpecificReport('posicao')" title="Baixar relatório" class="p-1.5 rounded-lg text-slate-500 hover:text-[#1D5BFF] hover:bg-slate-50 transition-colors cursor-pointer">
+                <i data-lucide="download" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Card 2: Movimentações por período -->
+          <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-card flex flex-col justify-between hover:border-slate-300/90 transition-all">
+            <div>
+              <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4">
+                <i data-lucide="arrow-left-right" class="w-5 h-5"></i>
+              </div>
+              <h4 class="font-semibold text-slate-900 text-[14.5px]">Movimentações por período</h4>
+              <p class="text-[12.5px] text-slate-400 mt-1.5 leading-relaxed">Entradas e saídas detalhadas com filtros personalizados.</p>
+            </div>
+            <div class="mt-6 pt-3.5 border-t border-slate-100 flex items-center justify-between text-[11.5px] text-slate-400">
+              <span>Atualizado há 8 min</span>
+              <button onclick="downloadSpecificReport('movimentacoes')" title="Baixar relatório" class="p-1.5 rounded-lg text-slate-500 hover:text-[#1D5BFF] hover:bg-slate-50 transition-colors cursor-pointer">
+                <i data-lucide="download" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Card 3: Produtos abaixo do mínimo -->
+          <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-card flex flex-col justify-between hover:border-slate-300/90 transition-all">
+            <div>
+              <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center mb-4">
+                <i data-lucide="bell" class="w-5 h-5"></i>
+              </div>
+              <h4 class="font-semibold text-slate-900 text-[14.5px]">Produtos abaixo do mínimo</h4>
+              <p class="text-[12.5px] text-slate-400 mt-1.5 leading-relaxed">Itens críticos que precisam de reposição imediata.</p>
+            </div>
+            <div class="mt-6 pt-3.5 border-t border-slate-100 flex items-center justify-between text-[11.5px] text-slate-400">
+              <span id="report-critical-count">0 produtos</span>
+              <button onclick="downloadSpecificReport('criticos')" title="Baixar relatório" class="p-1.5 rounded-lg text-slate-500 hover:text-[#1D5BFF] hover:bg-slate-50 transition-colors cursor-pointer">
+                <i data-lucide="download" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Card 4: Curva ABC de produtos -->
+          <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-card flex flex-col justify-between hover:border-slate-300/90 transition-all">
+            <div>
+              <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center mb-4">
+                <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+              </div>
+              <h4 class="font-semibold text-slate-900 text-[14.5px]">Curva ABC de produtos</h4>
+              <p class="text-[12.5px] text-slate-400 mt-1.5 leading-relaxed">Classificação por relevância e impacto financeiro.</p>
+            </div>
+            <div class="mt-6 pt-3.5 border-t border-slate-100 flex items-center justify-between text-[11.5px] text-slate-400">
+              <span>Atualizado hoje</span>
+              <button onclick="downloadSpecificReport('abc')" title="Baixar relatório" class="p-1.5 rounded-lg text-slate-500 hover:text-[#1D5BFF] hover:bg-slate-50 transition-colors cursor-pointer">
+                <i data-lucide="download" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- VIEW 5: ASSISTENTE IA                                     -->
+      <!-- ========================================================= -->
+      <section id="view-ia" class="hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[11.5px] font-semibold mb-2">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+              <span>Inteligência SmartStock</span>
+            </div>
+            <h2 class="text-[22px] sm:text-[24px] font-bold tracking-tight text-slate-900">Assistente IA de Estoque</h2>
+            <p class="text-[13.5px] text-slate-400 mt-1">Previsões de reposição, análises de giro e recomendações inteligentes.</p>
+          </div>
+          <button onclick="navigateTo('produtos', 'Estoque baixo')" class="inline-flex items-center justify-center gap-2 bg-[#1D5BFF] hover:bg-[#1649D8] text-white font-medium text-[13.5px] px-4 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer shrink-0">
+            <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+            Ver itens críticos (<span id="ia-low-count">0 produtos</span>)
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          <!-- Chat / Perguntas ao Assistente -->
+          <div class="lg:col-span-8 bg-white rounded-2xl border border-slate-200/80 p-6 shadow-card flex flex-col justify-between">
+            <div>
+              <h3 class="text-[15.5px] font-semibold text-slate-900 mb-1">Diagnóstico automático</h3>
+              <p class="text-[12.5px] text-slate-400 mb-4">Insights gerados em tempo real com base no seu catálogo e movimentações.</p>
+
+              <div id="ia-insights-box" class="space-y-3 bg-slate-50/80 border border-slate-100 rounded-xl p-4 text-[13px] text-slate-700 max-h-[320px] overflow-y-auto">
+                <div class="flex items-start gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-[#EEF4FF] text-[#1D5BFF] flex items-center justify-center shrink-0 mt-0.5">
+                    <i data-lucide="sparkles" class="w-4 h-4"></i>
+                  </div>
+                  <div>
+                    <p class="font-semibold text-slate-900">Bem-vindo ao SmartStock!</p>
+                    <p id="ia-welcome-summary" class="text-slate-600 mt-1 leading-relaxed">Seu ambiente está limpo e pronto para uso (<strong>0% da capacidade ocupada</strong>). Cadastre seus primeiros produtos ou registre entradas de estoque para acompanhar diagnósticos e previsões automáticas.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <form onsubmit="event.preventDefault(); askAssistant();" class="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2.5">
+              <input
+                id="ia-prompt-input"
+                type="text"
+                placeholder="Pergunte sobre reposição, produtos críticos ou giro..."
+                class="flex-1 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-[13px] text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#1D5BFF] focus:ring-2 focus:ring-[#1D5BFF]/10"
+              />
+              <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#1D5BFF] hover:bg-[#1649D8] text-white font-semibold text-[13px] transition-colors cursor-pointer shrink-0">
+                <span>Perguntar</span>
+                <i data-lucide="send" class="w-3.5 h-3.5"></i>
+              </button>
+            </form>
+          </div>
+
+          <!-- Sugestões rápidas -->
+          <div class="lg:col-span-4 bg-white rounded-2xl border border-slate-200/80 p-6 shadow-card space-y-4">
+            <h3 class="text-[15.5px] font-semibold text-slate-900">Perguntas sugeridas</h3>
+            <div class="space-y-2.5">
+              <button onclick="document.getElementById('ia-prompt-input').value='Quais produtos precisam de reposição urgente?'; askAssistant();" class="w-full text-left p-3.5 rounded-xl border border-slate-200/80 hover:border-[#1D5BFF] hover:bg-[#EEF4FF]/40 text-[12.5px] font-medium text-slate-700 transition-colors cursor-pointer">
+                Quais produtos precisam de reposição urgente?
+              </button>
+              <button onclick="document.getElementById('ia-prompt-input').value='Qual o valor total imobilizado em estoque?'; askAssistant();" class="w-full text-left p-3.5 rounded-xl border border-slate-200/80 hover:border-[#1D5BFF] hover:bg-[#EEF4FF]/40 text-[12.5px] font-medium text-slate-700 transition-colors cursor-pointer">
+                Qual o valor total imobilizado em estoque?
+              </button>
+              <button onclick="document.getElementById('ia-prompt-input').value='Como está o saldo entre entradas e saídas?'; askAssistant();" class="w-full text-left p-3.5 rounded-xl border border-slate-200/80 hover:border-[#1D5BFF] hover:bg-[#EEF4FF]/40 text-[12.5px] font-medium text-slate-700 transition-colors cursor-pointer">
+                Como está o saldo entre entradas e saídas?
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- VIEW 6: CONFIGURAÇÕES DA CONTA (PERFIL ADMINISTRADOR)     -->
+      <!-- ========================================================= -->
+      <section id="view-perfil" class="hidden space-y-6">
+        <!-- Cabeçalho da Página -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-[22px] sm:text-[24px] font-bold tracking-tight text-slate-900">Configurações da conta</h2>
+            <p class="text-[13.5px] text-slate-400 mt-1">Gerencie seus dados pessoais, contato, foto de perfil e segurança de administrador.</p>
+          </div>
+          <button type="button" onclick="navigateTo('dashboard')" class="inline-flex items-center justify-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium text-[13.5px] px-4 py-2.5 rounded-xl transition-all cursor-pointer shrink-0">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+            Voltar à visão geral
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <!-- Coluna Esquerda: Card Resumo do Perfil & Foto -->
+          <div class="lg:col-span-4 space-y-5">
+            <div class="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-card flex flex-col items-center text-center">
+              <div class="relative group">
+                <div id="profile-preview-avatar" class="w-24 h-24 rounded-full bg-[#EEF4FF] text-[#1D5BFF] font-bold text-[26px] flex items-center justify-center border-2 border-[#DCE8FF] overflow-hidden">
+                  RM
+                </div>
+                <label for="profile-photo-input" title="Alterar foto de perfil" class="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-[#1D5BFF] hover:bg-[#1649D8] text-white flex items-center justify-center shadow-md cursor-pointer transition-colors">
+                  <i data-lucide="camera" class="w-4 h-4"></i>
+                </label>
+                <input id="profile-photo-input" type="file" accept="image/*" onchange="handleProfilePhotoUpload(event)" class="hidden" />
+              </div>
+
+              <h3 id="profile-card-name" class="text-[17px] font-bold text-slate-900 mt-4">Rafael Martins</h3>
+              <p id="profile-card-role" class="text-[12.5px] text-slate-400 mt-0.5">Administrador • SmartStock</p>
+
+              <span class="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11.5px] font-semibold bg-emerald-50 text-emerald-600">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                Conta ativa e verificada
+              </span>
+
+              <div class="w-full mt-5 pt-5 border-t border-slate-100 flex items-center justify-center gap-2">
+                <label for="profile-photo-input" class="px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[12.5px] font-semibold text-slate-700 cursor-pointer transition-colors">
+                  Trocar foto
+                </label>
+                <button type="button" id="btn-remove-photo" onclick="removeProfilePhoto()" class="hidden px-3.5 py-2 rounded-xl border border-rose-200 bg-rose-50/50 hover:bg-rose-50 text-[12.5px] font-semibold text-rose-600 cursor-pointer transition-colors">
+                  Remover
+                </button>
+              </div>
+            </div>
+
+            <!-- Card de Permissões e Segurança -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-card space-y-4">
+              <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-[#EEF4FF] text-[#1D5BFF] flex items-center justify-center shrink-0">
+                  <i data-lucide="shield-check" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <h4 class="text-[14px] font-semibold text-slate-900">Nível de acesso</h4>
+                  <p class="text-[12px] text-slate-400">Permissões administrativas totais</p>
+                </div>
+              </div>
+              <ul class="space-y-2 text-[12.5px] text-slate-600 pt-2 border-t border-slate-100">
+                <li class="flex items-center gap-2">
+                  <i data-lucide="check" class="w-4 h-4 text-emerald-500"></i>
+                  <span>Gestão completa de produtos e preços</span>
+                </li>
+                <li class="flex items-center gap-2">
+                  <i data-lucide="check" class="w-4 h-4 text-emerald-500"></i>
+                  <span>Aprovação de entradas, saídas e ajustes</span>
+                </li>
+                <li class="flex items-center gap-2">
+                  <i data-lucide="check" class="w-4 h-4 text-emerald-500"></i>
+                  <span>Exportação de relatórios e Assistente IA</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Coluna Direita: Formulário de Edição de Dados -->
+          <div class="lg:col-span-8">
+            <form onsubmit="saveAdminProfile(event)" class="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-7 shadow-card space-y-6">
+              <div>
+                <h3 class="text-[16px] font-semibold text-slate-900">Informações pessoais</h3>
+                <p class="text-[12.5px] text-slate-400 mt-0.5">Esses dados identificam você nos registros de movimentação e relatórios.</p>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-[12.5px] font-medium text-slate-700 mb-1.5">Nome completo</label>
+                  <input
+                    id="profile-name-input"
+                    type="text"
+                    required
+                    value="Rafael Martins"
+                    placeholder="Seu nome completo"
+                    class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[13px] text-slate-800 focus:outline-none focus:border-[#1D5BFF] focus:ring-2 focus:ring-[#1D5BFF]/10"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-[12.5px] font-medium text-slate-700 mb-1.5">Cargo / Função</label>
+                  <input
+                    id="profile-role-input"
+                    type="text"
+                    required
+                    value="Administrador"
+                    placeholder="Ex.: Administrador, Gerente de Estoque"
+                    class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[13px] text-slate-800 focus:outline-none focus:border-[#1D5BFF] focus:ring-2 focus:ring-[#1D5BFF]/10"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-[12.5px] font-medium text-slate-700 mb-1.5">E-mail corporativo</label>
+                  <input
+                    id="profile-email-input"
+                    type="email"
+                    required
+                    value="rafael.martins@smartstock.com.br"
+                    placeholder="seuemail@empresa.com.br"
+                    class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[13px] text-slate-800 focus:outline-none focus:border-[#1D5BFF] focus:ring-2 focus:ring-[#1D5BFF]/10"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-[12.5px] font-medium text-slate-700 mb-1.5">Número de telefone / WhatsApp</label>
+                  <input
+                    id="profile-phone-input"
+                    type="tel"
+                    required
+                    value="(11) 98765-4321"
+                    placeholder="(00) 00000-0000"
+                    class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[13px] text-slate-800 focus:outline-none focus:border-[#1D5BFF] focus:ring-2 focus:ring-[#1D5BFF]/10"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-[12.5px] font-medium text-slate-700 mb-1.5">Empresa / Unidade</label>
+                  <input
+                    id="profile-company-input"
+                    type="text"
+                    value="SmartStock Matriz — Guarulhos/SP"
+                    placeholder="Nome da unidade"
+                    class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[13px] text-slate-800 focus:outline-none focus:border-[#1D5BFF] focus:ring-2 focus:ring-[#1D5BFF]/10"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-[12.5px] font-medium text-slate-700 mb-1.5">Departamento</label>
+                  <input
+                    id="profile-dept-input"
+                    type="text"
+                    value="Operações e Logística"
+                    placeholder="Seu departamento"
+                    class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[13px] text-slate-800 focus:outline-none focus:border-[#1D5BFF] focus:ring-2 focus:ring-[#1D5BFF]/10"
+                  />
+                </div>
+              </div>
+
+              <!-- Seção de Segurança / Senha -->
+              <div class="pt-5 border-t border-slate-100 space-y-4">
+                <div>
+                  <h4 class="text-[14.5px] font-semibold text-slate-900">Segurança e notificações</h4>
+                  <p class="text-[12px] text-slate-400 mt-0.5">Altere sua senha de acesso ou configure alertas por e-mail.</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-[12.5px] font-medium text-slate-700 mb-1.5">Nova senha (opcional)</label>
+                    <input
+                      id="profile-password-input"
+                      type="password"
+                      placeholder="••••••••"
+                      class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[13px] text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#1D5BFF] focus:ring-2 focus:ring-[#1D5BFF]/10"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-[12.5px] font-medium text-slate-700 mb-1.5">Confirmar nova senha</label>
+                    <input
+                      id="profile-password-confirm"
+                      type="password"
+                      placeholder="••••••••"
+                      class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[13px] text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#1D5BFF] focus:ring-2 focus:ring-[#1D5BFF]/10"
+                    />
+                  </div>
+                </div>
+
+                <label class="flex items-center gap-2.5 pt-1 cursor-pointer select-none">
+                  <input id="profile-alerts-email" type="checkbox" checked class="w-4 h-4 rounded border-slate-300 text-[#1D5BFF] focus:ring-[#1D5BFF]" />
+                  <span class="text-[13px] text-slate-600">Receber alertas automáticos por e-mail quando um item atingir o estoque mínimo</span>
+                </label>
+              </div>
+
+              <!-- Botões de Ação -->
+              <div class="pt-5 border-t border-slate-100 flex items-center justify-end gap-3">
+                <button type="button" onclick="resetProfileForm()" class="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium text-[13px] transition-colors cursor-pointer">
+                  Descartar alterações
+                </button>
+                <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1D5BFF] hover:bg-[#1649D8] text-white font-semibold text-[13px] shadow-xs transition-colors cursor-pointer">
+                  <i data-lucide="check" class="w-4 h-4"></i>
+                  <span>Salvar configurações</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- MODAL 1: NOVA MOVIMENTAÇÃO                                -->
+  <!-- ========================================================= -->
+  <div id="modal-movement" class="modal-backdrop fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="modal-panel bg-white rounded-2xl border border-slate-200/80 shadow-modal w-full max-w-[460px] overflow-hidden">
+      <div class="px-6 pt-6 pb-4 flex items-start justify-between">
+        <div>
+          <h3 class="text-[17px] font-bold text-slate-900">Nova movimentação</h3>
+          <p class="text-[12.5px] text-slate-400 mt-0.5">Registre uma entrada ou saída de estoque.</p>
+        </div>
+        <button type="button" onclick="closeMovementModal()" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200/70 text-slate-500 flex items-center justify-center transition-colors cursor-pointer">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <form onsubmit="saveMovement(event)" class="px-6 pb-6 space-y-4">
+        <!-- Seletor Entrada / Saída -->
+        <div class="grid grid-cols-2 gap-3">
+          <button type="button" id="btn-type-entrada" onclick="selectMovementType('Entrada')" class="py-2.5 px-4 rounded-xl border border-[#1D5BFF] bg-[#EEF4FF]/40 text-[#1D5BFF] font-semibold text-[13px] flex items-center justify-center gap-2 transition-all cursor-pointer">
+            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+            <span>Entrada</span>
+          </button>
+          <button type="button" id="btn-type-saida" onclick="selectMovementType('Saída')" class="py-2.5 px-4 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 font-medium text-[13px] flex items-center justify-center gap-2 transition-all cursor-pointer">
+            <i data-lucide="chevron-up" class="w-4 h-4"></i>
+            <span>Saída</span>
+          </button>
+        </div>
+
+        <!-- Produto -->
+        <div>
+          <label class="block text-[12.5px] font-medium text-slate-700 mb-1.5">Produto</label>
+          <div class="relative">
+            <select id="movement-product-select" required class="w-full appearance-none bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 pr-9 text-[13px] font-medium text-slate-800 focus:outline-none focus:border-[#1D5BFF] focus:ring-2 focus:ring-[#1D5BFF]/10">
+              <!-- Preenchido via JS -->
+            </select>
+            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+          </div>
+        </div>
+
+        <!-- Quantidade e Referência -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[12.5px] font-medium text-slate-700 mb-1.5">Quantidade</label>
+            <input
+              id="movement-qty-input"
+              type="number"
+              min="1"
+              required
+              placeholder="0"
+              class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[13px] text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#1D5BFF] focus:ring-2 focus:ring-[#1D5BFF]/10"
+            />
+          </div>
+          <div>
+            <label class="block text-[12.5px] font-medium text-slate-700 mb-1.5">Referência</label>
+            <input
+              id="movement-ref-input"
+              type="text"
+              required
+              placeholder="NF-e ou pedido"
+              class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[13px] text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#1D5BFF] focus:ring-2 focus:ring-[#1D5BFF]/10"
+            />
+          </div>
+        </div>
+
+        <!-- Rodapé Modal -->
+        <div class="pt-4 mt-2 border-t border-slate-100 flex items-center justify-end gap-2.5">
+          <button type="button" onclick="closeMovementModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium text-[13px] transition-colors cursor-pointer">
+            Cancelar
+          </button>
+          <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#1D5BFF] hover:bg-[#1649D8] text-white font-semibold text-[13px] shadow-xs transition-colors cursor-pointer">
+            <i data-lucide="check" class="w-4 h-4"></i>
+            <span>Salvar movimentação</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- MODAL 2: CADASTRAR / EDITAR PRODUTO                       -->
+  <!-- ========================================================= -->
+  <div id="modal-product" class="modal-backdrop fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="modal-panel bg-white rounded-2xl border border-slate-200/80 shadow-modal w-full max-w-[460px] overflow-hidden">
+      <div class="px-6 pt-6 pb-4 flex items-start justify-between">
+        <div>
+          <h3 id="product-modal-title" class="text-[17px] font-bold text-slate-900">Cadastrar novo produto</h3>
+          <p class="text-[12.5px] text-slate-400 mt-0.5">Mantenha os dados e níveis do item atualizados.</p>
+        </div>
+        <button type="button" onclick="closeProductModal()" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200/70 text-slate-500 flex items-center justify-center transition-colors cursor-pointer">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <form onsubmit="saveProduct(event)" class="px-6 pb-6 space-y-4">
+        <input type="hidden" id="product-edit-id" value="" />
+
+        <div>
+          <label class="block text-[12.5px] font-medium text-slate-700 mb-1.5">Nome do produto</label>
+          <input
+            id="product-name-input"
+            type="text"
+            required
+            placeholder="Ex.: Notebook Dell Latitude"
+            class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[13px] text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#1D5BFF] focus:ring-2 focus:ring-[#1D5BFF]/10"
+          />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[12.5px] font-medium text-slate-700 mb-1.5">SKU</label>
+            <input
+              id="product-sku-input"
+              type="text"
+              required
+              placeholder="INF-0001"
+              class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[13px] text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#1D5BFF] focus:ring-2 focus:ring-[#1D5BFF]/10"
+            />
+          </div>
+          <div>
+            <label class="block text-[12.5px] font-medium text-slate-700 mb-1.5">Categoria</label>
+            <div class="relative">
+              <select id="product-category-input" class="w-full appearance-none bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 pr-9 text-[13px] font-medium text-slate-800 focus:outline-none focus:border-[#1D5BFF]">
+                <option value="Eletrônicos">Eletrônicos</option>
+                <option value="Informática">Informática</option>
+                <option value="Mobiliário">Mobiliário</option>
+                <option value="Escritório">Escritório</option>
+              </select>
+              <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[12.5px] font-medium text-slate-700 mb-1.5">Estoque atual</label>
+            <input
+              id="product-stock-input"
+              type="number"
+              min="0"
+              required
+              placeholder="0"
+              class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[13px] text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#1D5BFF] focus:ring-2 focus:ring-[#1D5BFF]/10"
+            />
+          </div>
+          <div>
+            <label class="block text-[12.5px] font-medium text-slate-700 mb-1.5">Estoque mínimo</label>
+            <input
+              id="product-min-input"
+              type="number"
+              min="1"
+              required
+              placeholder="10"
+              class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[13px] text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#1D5BFF] focus:ring-2 focus:ring-[#1D5BFF]/10"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[12.5px] font-medium text-slate-700 mb-1.5">Valor unitário (R$)</label>
+          <input
+            id="product-price-input"
+            type="text"
+            required
+            placeholder="0,00"
+            class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[13px] text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#1D5BFF] focus:ring-2 focus:ring-[#1D5BFF]/10"
+          />
+        </div>
+
+        <div class="pt-4 mt-2 border-t border-slate-100 flex items-center justify-end gap-2.5">
+          <button type="button" onclick="closeProductModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium text-[13px] transition-colors cursor-pointer">
+            Cancelar
+          </button>
+          <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#1D5BFF] hover:bg-[#1649D8] text-white font-semibold text-[13px] shadow-xs transition-colors cursor-pointer">
+            <i data-lucide="check" class="w-4 h-4"></i>
+            <span>Salvar produto</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- MODAL DE CONFIRMAÇÃO DE EXCLUSÃO                          -->
+  <!-- ========================================================= -->
+  <div id="modal-delete" class="modal-backdrop fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="modal-panel bg-white rounded-2xl border border-slate-200/80 shadow-modal w-full max-w-[400px] p-6">
+      <div class="flex items-start gap-3.5">
+        <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center shrink-0">
+          <i data-lucide="trash-2" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h3 class="text-[16px] font-bold text-slate-900">Excluir produto</h3>
+          <p class="text-[13px] text-slate-500 mt-1">Tem certeza que deseja remover <strong id="delete-product-name" class="text-slate-800"></strong> do catálogo?</p>
+        </div>
+      </div>
+      <div class="mt-6 flex items-center justify-end gap-2.5">
+        <button type="button" onclick="closeDeleteModal()" class="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium text-[13px] cursor-pointer">
+          Cancelar
+        </button>
+        <button type="button" onclick="confirmDeleteProduct()" class="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-semibold text-[13px] cursor-pointer">
+          Excluir produto
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- MODAL 3: CRIAR RELATÓRIO PERSONALIZADO                    -->
+  <!-- ========================================================= -->
+  <div id="modal-create-report" class="modal-backdrop fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="modal-panel bg-white rounded-2xl border border-slate-200/80 shadow-modal w-full max-w-[460px] overflow-hidden">
+      <div class="px-6 pt-6 pb-4 flex items-start justify-between">
+        <div>
+          <h3 class="text-[17px] font-bold text-slate-900">Criar relatório personalizado</h3>
+          <p class="text-[12.5px] text-slate-400 mt-0.5">Configure os parâmetros para exportação imediata.</p>
+        </div>
+        <button onclick="closeCreateReportModal()" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200/70 text-slate-500 flex items-center justify-center transition-colors cursor-pointer">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <form onsubmit="handleGenerateCustomReport(event)" class="px-6 pb-6 space-y-4">
+        <div>
+          <label class="block text-[12.5px] font-medium text-slate-700 mb-1.5">Tipo de relatório</label>
+          <div class="relative">
+            <select id="custom-report-type" class="w-full appearance-none bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 pr-9 text-[13px] text-slate-800 focus:outline-none focus:border-[#1D5BFF]">
+              <option value="posicao">Posição atual do estoque</option>
+              <option value="movimentacoes">Movimentações por período</option>
+              <option value="criticos">Produtos abaixo do mínimo</option>
+              <option value="abc">Curva ABC de produtos</option>
+            </select>
+            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[12.5px] font-medium text-slate-700 mb-1.5">Período</label>
+            <div class="relative">
+              <select id="custom-report-period" class="w-full appearance-none bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 pr-9 text-[13px] text-slate-800 focus:outline-none focus:border-[#1D5BFF]">
+                <option value="Este mês (Jun/2025)">Este mês (Jun/2025)</option>
+                <option value="Últimos 30 dias">Últimos 30 dias</option>
+                <option value="Último trimestre">Último trimestre</option>
+              </select>
+              <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            </div>
+          </div>
+          <div>
+            <label class="block text-[12.5px] font-medium text-slate-700 mb-1.5">Formato</label>
+            <div class="relative">
+              <select id="custom-report-format" class="w-full appearance-none bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 pr-9 text-[13px] text-slate-800 focus:outline-none focus:border-[#1D5BFF]">
+                <option value="CSV">Planilha CSV (.csv)</option>
+                <option value="TXT">Resumo Executivo (.txt)</option>
+              </select>
+              <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-4 mt-2 border-t border-slate-100 flex items-center justify-end gap-2.5">
+          <button type="button" onclick="closeCreateReportModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium text-[13px] transition-colors cursor-pointer">
+            Cancelar
+          </button>
+          <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#1D5BFF] hover:bg-[#1649D8] text-white font-semibold text-[13px] shadow-xs transition-colors cursor-pointer">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            Gerar e baixar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- MODAL 4: PREVIEW DO RELATÓRIO GERENCIAL COMPLETO          -->
+  <!-- ========================================================= -->
+  <div id="modal-report-preview" class="modal-backdrop fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="modal-panel bg-white rounded-2xl border border-slate-200/80 shadow-modal w-full max-w-[640px] overflow-hidden">
+      <div class="px-6 pt-6 pb-4 border-b border-slate-100 flex items-start justify-between">
+        <div>
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-[#1D5BFF]">Visão Gerencial Consolidada</span>
+          <h3 class="text-[17px] font-bold text-slate-900 mt-0.5">Relatório Completo de Estoque — Junho 2025</h3>
+        </div>
+        <button onclick="closeCompleteReportPreview()" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200/70 text-slate-500 flex items-center justify-center transition-colors cursor-pointer">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div id="complete-report-body" class="p-6 space-y-4 max-h-[65vh] overflow-y-auto text-[13px]">
+        <!-- Preenchido via JS -->
+      </div>
+
+      <div class="px-6 py-4 bg-slate-50/70 border-t border-slate-100 flex items-center justify-end gap-2.5">
+        <button onclick="closeCompleteReportPreview()" class="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium text-[13px] cursor-pointer">
+          Fechar
+        </button>
+        <button onclick="downloadSpecificReport('completo'); closeCompleteReportPreview();" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#1D5BFF] hover:bg-[#1649D8] text-white font-semibold text-[13px] cursor-pointer">
+          <i data-lucide="download" class="w-4 h-4"></i>
+          Baixar CSV completo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 translate-y-20 opacity-0 pointer-events-none transition-all duration-300 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2.5 text-[13px] font-medium">
+    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+    <span id="toast-message">Ação concluída com sucesso!</span>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- JAVASCRIPT: ESTADO, GRÁFICO E INTERATIVIDADE              -->
+  <!-- ========================================================= -->
+  <script>
+    // 1. DADOS INICIAIS TOTALMENTE LIMPOS (ZERADOS)
+    let products = [];
+    let movements = [];
+
+    // Contadores base zerados
+    let baseProductCountOffset = 0;
+    let baseMonthMovements = 0;
+    let baseCapacityUnits = 0;
+    const maxCapacityUnits = 25000;
+
+    // Contadores base da tela Movimentações zerados
+    let movEntradasMes = 0;
+    let movSaidasMes = 0;
+    let movPedidosAtendidos = 0;
+
+    let currentMovementType = 'Entrada';
+    let stockChartInstance = null;
+    let currentPage = 1;
+
+    // Estado do perfil do administrador
+    let adminProfile = {
+      name: 'Rafael Martins',
+      role: 'Administrador',
+      email: 'rafael.martins@smartstock.com.br',
+      phone: '(11) 98765-4321',
+      company: 'SmartStock Matriz — Guarulhos/SP',
+      department: 'Operações e Logística',
+      emailAlerts: true,
+      photoUrl: null
+    };
+
+    function getUserInitials(fullName) {
+      const parts = (fullName || 'RM').trim().split(/\s+/);
+      if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+
+    function getShortResponsibleName() {
+      const parts = adminProfile.name.trim().split(/\s+/);
+      if (parts.length === 1) return parts[0];
+      return `${parts[0]} ${parts[1][0]}.`;
+    }
+
+    // 2. UTILITÁRIOS DE FORMATAÇÃO
+    function formatCurrency(value) {
+      return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function parseBrazilianCurrency(str) {
+      if (typeof str === 'number') return str;
+      const cleaned = str.replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.');
+      const num = parseFloat(cleaned);
+      return isNaN(num) ? 0 : num;
+    }
+
+    function getCategoryColors(category) {
+      const map = {
+        'Eletrônicos': { bg: 'bg-sky-50', text: 'text-sky-600' },
+        'Informática': { bg: 'bg-indigo-50', text: 'text-indigo-600' },
+        'Mobiliário': { bg: 'bg-emerald-50', text: 'text-emerald-600' },
+        'Escritório': { bg: 'bg-purple-50', text: 'text-purple-600' }
+      };
+      return map[category] || { bg: 'bg-slate-100', text: 'text-slate-600' };
+    }
+
+    // 3. NAVEGAÇÃO ENTRE TELAS
+    function navigateTo(viewName, presetStatusFilter = null) {
+      const views = ['dashboard', 'produtos', 'movimentacoes', 'relatorios', 'ia', 'perfil'];
+      views.forEach(v => {
+        const el = document.getElementById(`view-${v}`);
+        if (el) el.classList.add('hidden');
+
+        const navBtn = document.getElementById(`nav-${v}`);
+        if (navBtn) {
+          navBtn.classList.remove('bg-[#EEF4FF]', 'text-[#1D5BFF]');
+          navBtn.classList.add('text-slate-600', 'hover:bg-slate-50', 'hover:text-slate-900');
+        }
+      });
+
+      const activeView = document.getElementById(`view-${viewName}`);
+      if (activeView) activeView.classList.remove('hidden');
+
+      const activeNav = document.getElementById(`nav-${viewName}`);
+      if (activeNav) {
+        activeNav.classList.remove('text-slate-600', 'hover:bg-slate-50', 'hover:text-slate-900');
+        activeNav.classList.add('bg-[#EEF4FF]', 'text-[#1D5BFF]');
+      }
+
+      const titles = {
+        dashboard: 'Visão geral',
+        produtos: 'Produtos',
+        movimentacoes: 'Movimentações',
+        relatorios: 'Relatórios',
+        ia: 'Assistente IA',
+        perfil: 'Configurações da conta'
+      };
+      document.getElementById('header-title').textContent = titles[viewName] || 'Visão geral';
+
+      if (viewName === 'produtos') {
+        if (presetStatusFilter) {
+          document.getElementById('product-status-filter').value = presetStatusFilter;
+        }
+        renderProductsTable();
+      } else if (viewName === 'perfil') {
+        populateProfileForm();
+      }
+
+      // Fechar sidebar no mobile se aberta
+      const sidebar = document.getElementById('sidebar');
+      if (!sidebar.classList.contains('-translate-x-full') && window.innerWidth < 1024) {
+        toggleMobileSidebar();
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function toggleMobileSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('mobile-sidebar-overlay');
+      sidebar.classList.toggle('-translate-x-full');
+      overlay.classList.toggle('hidden');
+    }
+
+    // 4. RENDERIZAÇÃO DO DASHBOARD (KPIs, ALERTAS E MOVIMENTAÇÕES)
+    function updateDashboardMetrics() {
+      const currentSum = products.reduce((acc, p) => acc + (p.stock * p.price), 0);
+      document.getElementById('kpi-total-value').textContent = formatCurrency(Math.max(0, currentSum));
+
+      const valueSubEl = document.getElementById('kpi-value-sub');
+      if (currentSum > 0) {
+        valueSubEl.className = 'flex items-center gap-1 text-[12px] font-medium text-emerald-600 mt-2.5';
+        valueSubEl.innerHTML = `<i data-lucide="chevron-up" class="w-3.5 h-3.5"></i><span>Capital ativo em estoque</span>`;
+      } else {
+        valueSubEl.className = 'flex items-center gap-1 text-[12px] font-medium text-slate-400 mt-2.5';
+        valueSubEl.innerHTML = `<span>Nenhum valor em estoque</span>`;
+      }
+
+      const totalProductsCount = baseProductCountOffset + products.length;
+      document.getElementById('kpi-total-products').textContent = totalProductsCount;
+      document.getElementById('sidebar-products-badge').textContent = totalProductsCount;
+
+      const productsSubEl = document.getElementById('kpi-products-sub');
+      if (totalProductsCount > 0) {
+        productsSubEl.className = 'flex items-center gap-1 text-[12px] font-medium text-emerald-600 mt-2.5';
+        productsSubEl.innerHTML = `<i data-lucide="chevron-up" class="w-3.5 h-3.5"></i><span>${totalProductsCount} ${totalProductsCount === 1 ? 'item ativo' : 'itens ativos'}</span>`;
+      } else {
+        productsSubEl.className = 'flex items-center gap-1 text-[12px] font-medium text-slate-400 mt-2.5';
+        productsSubEl.innerHTML = `<span>Nenhum produto cadastrado</span>`;
+      }
+
+      const lowStockItems = products.filter(p => p.stock < p.minStock);
+      document.getElementById('kpi-low-stock').textContent = lowStockItems.length;
+
+      const lowSubEl = document.getElementById('kpi-low-sub');
+      if (lowStockItems.length > 0) {
+        lowSubEl.className = 'flex items-center gap-1 text-[12px] font-medium text-rose-500 mt-2.5';
+        lowSubEl.innerHTML = `<i data-lucide="chevron-down" class="w-3.5 h-3.5"></i><span>Requer sua atenção</span>`;
+      } else {
+        lowSubEl.className = 'flex items-center gap-1 text-[12px] font-medium text-slate-400 mt-2.5';
+        lowSubEl.innerHTML = `<span>Nenhum alerta ativo</span>`;
+      }
+
+      const iaLowCountEl = document.getElementById('ia-low-count');
+      if (iaLowCountEl) {
+        iaLowCountEl.textContent = `${lowStockItems.length} ${lowStockItems.length === 1 ? 'produto' : 'produtos'}`;
+      }
+
+      const reportCritEl = document.getElementById('report-critical-count');
+      if (reportCritEl) {
+        reportCritEl.textContent = `${lowStockItems.length} ${lowStockItems.length === 1 ? 'produto' : 'produtos'}`;
+      }
+
+      document.getElementById('kpi-month-movements').textContent = baseMonthMovements.toLocaleString('pt-BR');
+      const movSubEl = document.getElementById('kpi-movements-sub');
+      if (baseMonthMovements > 0) {
+        movSubEl.className = 'flex items-center gap-1 text-[12px] font-medium text-emerald-600 mt-2.5';
+        movSubEl.innerHTML = `<i data-lucide="chevron-up" class="w-3.5 h-3.5"></i><span>Registros atualizados</span>`;
+      } else {
+        movSubEl.className = 'flex items-center gap-1 text-[12px] font-medium text-slate-400 mt-2.5';
+        movSubEl.innerHTML = `<span>Sem registros no período</span>`;
+      }
+
+      // Atualiza KPIs da aba Movimentações
+      const saldoPeriodo = movEntradasMes - movSaidasMes;
+      const saldoPrefix = saldoPeriodo > 0 ? '+' : (saldoPeriodo < 0 ? '−' : '');
+      document.getElementById('mov-kpi-entradas').textContent = `${movEntradasMes.toLocaleString('pt-BR')} un.`;
+      document.getElementById('mov-kpi-saidas').textContent = `${movSaidasMes.toLocaleString('pt-BR')} un.`;
+      document.getElementById('mov-kpi-pedidos').textContent = `${movPedidosAtendidos} ${movPedidosAtendidos === 1 ? 'pedido atendido' : 'pedidos atendidos'}`;
+      document.getElementById('mov-kpi-saldo').textContent = `${saldoPrefix}${Math.abs(saldoPeriodo).toLocaleString('pt-BR')} un.`;
+
+      const entradasSub = document.getElementById('mov-kpi-entradas-sub');
+      if (movEntradasMes > 0) {
+        entradasSub.textContent = 'Entradas acumuladas';
+        entradasSub.className = 'text-[12px] font-medium text-emerald-600 mt-2.5';
+      } else {
+        entradasSub.textContent = 'Nenhuma entrada registrada';
+        entradasSub.className = 'text-[12px] font-medium text-slate-400 mt-2.5';
+      }
+
+      const balancoLabel = document.getElementById('mov-kpi-balanco-label');
+      if (movEntradasMes === 0 && movSaidasMes === 0) {
+        balancoLabel.textContent = 'Sem movimentações';
+        balancoLabel.className = 'text-[12px] font-medium text-slate-400 mt-2.5';
+      } else if (saldoPeriodo >= 0) {
+        balancoLabel.textContent = 'Balanço positivo';
+        balancoLabel.className = 'text-[12px] font-medium text-emerald-600 mt-2.5';
+      } else {
+        balancoLabel.textContent = 'Balanço negativo';
+        balancoLabel.className = 'text-[12px] font-medium text-rose-500 mt-2.5';
+      }
+
+      // Capacidade do estoque
+      const totalUnits = Math.max(0, products.reduce((acc, p) => acc + p.stock, 0));
+      const pct = Math.min(100, Math.round((totalUnits / maxCapacityUnits) * 100));
+
+      document.getElementById('capacity-percent').textContent = `${pct}%`;
+      document.getElementById('capacity-bar').style.width = `${pct}%`;
+      document.getElementById('capacity-units').textContent = `${totalUnits.toLocaleString('pt-BR')} de 25.000 unidades`;
+
+      const iaWelcome = document.getElementById('ia-welcome-summary');
+      if (iaWelcome) {
+        iaWelcome.innerHTML = products.length === 0
+          ? `Seu ambiente está limpo e pronto para uso (<strong>0% da capacidade ocupada</strong>). Cadastre seus primeiros produtos ou registre entradas de estoque para acompanhar diagnósticos e previsões automáticas.`
+          : `Seu estoque está operando em <strong>${pct}% da capacidade total</strong> com <strong>${products.length} ${products.length === 1 ? 'produto cadastrado' : 'produtos cadastrados'}</strong> e ${lowStockItems.length} ${lowStockItems.length === 1 ? 'item crítico' : 'itens críticos'} abaixo do mínimo.`;
+      }
+
+      renderAlertsList(lowStockItems);
+      renderMovementsTables();
+      updateChartFromLiveState();
+      lucide.createIcons();
+    }
+
+    function renderAlertsList(lowStockItems) {
+      const container = document.getElementById('dashboard-alerts-list');
+      const notifList = document.getElementById('notif-list');
+      const notifBadge = document.getElementById('notif-count-badge');
+      const notifDot = document.getElementById('notif-dot');
+
+      notifBadge.textContent = `${lowStockItems.length} ${lowStockItems.length === 1 ? 'item' : 'itens'}`;
+
+      if (lowStockItems.length === 0) {
+        notifBadge.className = 'text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600';
+        if (notifDot) notifDot.classList.add('hidden');
+        container.innerHTML = `
+          <div class="py-10 px-4 text-center flex flex-col items-center justify-center">
+            <div class="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center mb-2.5">
+              <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+            </div>
+            <p class="text-[13px] font-medium text-slate-600">Nenhum alerta de estoque</p>
+            <p class="text-[12px] text-slate-400 mt-0.5">Os produtos abaixo do mínimo aparecerão aqui.</p>
+          </div>
+        `;
+        notifList.innerHTML = `<p class="text-slate-400 text-center py-3">Nenhum alerta no momento.</p>`;
+        return;
+      }
+
+      notifBadge.className = 'text-[11px] font-medium px-2 py-0.5 rounded-full bg-rose-50 text-rose-600';
+      if (notifDot) notifDot.classList.remove('hidden');
+
+      container.innerHTML = lowStockItems.slice(0, 4).map(item => `
+        <div class="py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-9 h-9 rounded-xl ${item.iconBg} ${item.iconColor} flex items-center justify-center shrink-0">
+              <i data-lucide="box" class="w-4 h-4"></i>
+            </div>
+            <div class="min-w-0">
+              <p class="text-[13px] font-semibold text-slate-900 truncate">${item.name}</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">${item.sku}</p>
+            </div>
+          </div>
+          <div class="text-right shrink-0">
+            <p class="text-[13px] font-bold text-rose-500">${item.stock} un.</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">Mín. ${item.minStock}</p>
+          </div>
+        </div>
+      `).join('');
+
+      notifList.innerHTML = lowStockItems.map(item => `
+        <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50">
+          <div>
+            <p class="font-semibold text-slate-800">${item.name}</p>
+            <p class="text-[11px] text-slate-400">SKU: ${item.sku} • Mín. ${item.minStock}</p>
+          </div>
+          <span class="font-bold text-rose-500">${item.stock} un.</span>
+        </div>
+      `).join('');
+    }
+
+    function renderMovementsTables() {
+      const recentTbody = document.getElementById('recent-movements-tbody');
+      const fullTbody = document.getElementById('full-movements-tbody');
+
+      if (movements.length === 0) {
+        const emptyRow = `
+          <tr>
+            <td colspan="6" class="py-12 px-6 text-center">
+              <div class="flex flex-col items-center justify-center max-w-xs mx-auto">
+                <div class="w-11 h-11 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center mb-3">
+                  <i data-lucide="arrow-left-right" class="w-5 h-5"></i>
+                </div>
+                <p class="text-[13.5px] font-semibold text-slate-700">Nenhuma movimentação registrada</p>
+                <p class="text-[12px] text-slate-400 mt-1">Cadastre um produto e clique em "Nova movimentação" para iniciar o histórico.</p>
+              </div>
+            </td>
+          </tr>
+        `;
+        recentTbody.innerHTML = emptyRow;
+        fullTbody.innerHTML = emptyRow;
+        return;
+      }
+
+      const rowsHTML = movements.slice(0, 5).map(m => createMovementRowHTML(m)).join('');
+      const fullRowsHTML = movements.map(m => createMovementRowHTML(m)).join('');
+
+      recentTbody.innerHTML = rowsHTML;
+      fullTbody.innerHTML = fullRowsHTML;
+    }
+
+    function createMovementRowHTML(m) {
+      const isEntrada = m.type === 'Entrada';
+      const badgeClass = isEntrada
+        ? 'bg-emerald-50 text-emerald-600'
+        : 'bg-rose-50 text-rose-500';
+      const iconName = isEntrada ? 'chevron-down' : 'chevron-up';
+      const qtyPrefix = isEntrada ? '+' : '−';
+      const qtyColor = isEntrada ? 'text-emerald-600' : 'text-rose-500';
+
+      return `
+        <tr class="hover:bg-slate-50/70 transition-colors">
+          <td class="py-3.5 px-6 whitespace-nowrap">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-semibold ${badgeClass}">
+              <i data-lucide="${iconName}" class="w-3.5 h-3.5"></i>
+              ${m.type}
+            </span>
+          </td>
+          <td class="py-3.5 px-6 font-semibold text-slate-900 whitespace-nowrap">${m.product}</td>
+          <td class="py-3.5 px-6 text-slate-500 whitespace-nowrap">${m.ref}</td>
+          <td class="py-3.5 px-6 font-semibold ${qtyColor} whitespace-nowrap">${qtyPrefix}${m.qty} un.</td>
+          <td class="py-3.5 px-6 text-slate-400 whitespace-nowrap">${m.date}</td>
+          <td class="py-3.5 px-6 text-slate-600 whitespace-nowrap">${m.user}</td>
+        </tr>
+      `;
+    }
+
+    // 5. GRÁFICO CHART.JS (MOVIMENTAÇÃO DO ESTOQUE - INICIA ZERADO E ATUALIZA COM MOVIMENTAÇÕES)
+    function initStockChart() {
+      const canvas = document.getElementById('stockMovementChart');
+      if (!canvas || typeof Chart === 'undefined') return;
+      const ctx = canvas.getContext('2d');
+
+      const gradientBlue = ctx.createLinearGradient(0, 0, 0, 260);
+      gradientBlue.addColorStop(0, 'rgba(37, 99, 235, 0.14)');
+      gradientBlue.addColorStop(1, 'rgba(37, 99, 235, 0.0)');
+
+      stockChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['Dez', 'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
+          datasets: [
+            {
+              label: 'Entradas',
+              data: [0, 0, 0, 0, 0, 0, 0],
+              borderColor: '#2563EB',
+              backgroundColor: gradientBlue,
+              borderWidth: 2.2,
+              tension: 0.44,
+              fill: true,
+              pointRadius: 0,
+              pointHoverRadius: 5,
+              pointHoverBackgroundColor: '#2563EB',
+              pointHoverBorderColor: '#FFFFFF',
+              pointHoverBorderWidth: 2
+            },
+            {
+              label: 'Saídas',
+              data: [0, 0, 0, 0, 0, 0, 0],
+              borderColor: '#94A3B8',
+              backgroundColor: 'transparent',
+              borderWidth: 1.8,
+              borderDash: [5, 5],
+              tension: 0.44,
+              fill: false,
+              pointRadius: 0,
+              pointHoverRadius: 5,
+              pointHoverBackgroundColor: '#64748B',
+              pointHoverBorderColor: '#FFFFFF',
+              pointHoverBorderWidth: 2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false,
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#0F172A',
+              titleFont: { family: 'Plus Jakarta Sans', size: 12, weight: '600' },
+              bodyFont: { family: 'Plus Jakarta Sans', size: 12 },
+              padding: 10,
+              cornerRadius: 10,
+              displayColors: true,
+              callbacks: {
+                label: (ctx) => ` ${ctx.dataset.label}: ${ctx.parsed.y} un.`
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              border: { display: false },
+              ticks: {
+                color: '#94A3B8',
+                font: { family: 'Plus Jakarta Sans', size: 11.5 },
+                padding: 8
+              }
+            },
+            y: {
+              min: 0,
+              suggestedMax: 100,
+              border: { display: false },
+              grid: {
+                color: '#F1F5F9',
+                drawTicks: false
+              },
+              ticks: {
+                color: '#94A3B8',
+                font: { family: 'Plus Jakarta Sans', size: 11.5 },
+                padding: 12
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function updateChartFromLiveState() {
+      if (!stockChartInstance) return;
+      const period = document.getElementById('chart-period-select')?.value || '7m';
+      updateChartPeriod(period);
+    }
+
+    function updateChartPeriod(period) {
+      if (!stockChartInstance) return;
+      const labelsMap = {
+        '7m': ['Dez', 'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
+        '6m': ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
+        'year': ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun']
+      };
+      const labels = labelsMap[period] || labelsMap['7m'];
+      const inData = new Array(labels.length).fill(0);
+      const outData = new Array(labels.length).fill(0);
+
+      // Reflete as entradas e saídas acumuladas no mês atual (Junho)
+      inData[inData.length - 1] = movEntradasMes;
+      outData[outData.length - 1] = movSaidasMes;
+
+      stockChartInstance.data.labels = labels;
+      stockChartInstance.data.datasets[0].data = inData;
+      stockChartInstance.data.datasets[1].data = outData;
+      stockChartInstance.update();
+    }
+
+    // 6. CATÁLOGO DE PRODUTOS (TELA 4)
+    function renderProductsTable() {
+      const searchInput = document.getElementById('product-search-input');
+      const catSelect = document.getElementById('product-category-filter');
+      const statusSelect = document.getElementById('product-status-filter');
+      const tbody = document.getElementById('products-tbody');
+      const paginationInfo = document.getElementById('products-pagination-info');
+      if (!tbody) return;
+
+      const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+      const catFilter = catSelect ? catSelect.value : 'all';
+      const statusFilter = statusSelect ? statusSelect.value : 'all';
+
+      const filtered = products.filter(p => {
+        const status = p.stock < p.minStock ? 'Estoque baixo' : 'Normal';
+        const matchesQuery = p.name.toLowerCase().includes(query) ||
+                             p.sku.toLowerCase().includes(query) ||
+                             p.category.toLowerCase().includes(query);
+        const matchesCat = catFilter === 'all' || p.category === catFilter;
+        const matchesStatus = statusFilter === 'all' || status === statusFilter;
+        return matchesQuery && matchesCat && matchesStatus;
+      });
+
+      if (products.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="py-14 px-6 text-center">
+              <div class="flex flex-col items-center justify-center max-w-sm mx-auto">
+                <div class="w-12 h-12 rounded-2xl bg-[#EEF4FF] text-[#1D5BFF] flex items-center justify-center mb-3.5">
+                  <i data-lucide="package-plus" class="w-6 h-6"></i>
+                </div>
+                <p class="text-[14px] font-semibold text-slate-900">Nenhum produto cadastrado</p>
+                <p class="text-[12.5px] text-slate-400 mt-1">Seu catálogo está vazio. Adicione seu primeiro produto para começar a controlar seu estoque.</p>
+                <button onclick="openProductModal()" class="mt-4 inline-flex items-center gap-1.5 bg-[#1D5BFF] hover:bg-[#1649D8] text-white font-medium text-[13px] px-4 py-2 rounded-xl shadow-xs transition-colors cursor-pointer">
+                  <i data-lucide="plus" class="w-4 h-4"></i>
+                  Cadastrar primeiro produto
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      } else if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="py-10 text-center text-[13.5px] text-slate-400">
+              Nenhum produto encontrado com os filtros aplicados.
+            </td>
+          </tr>
+        `;
+      } else {
+        tbody.innerHTML = filtered.map(p => {
+          const isLow = p.stock < p.minStock;
+          const statusLabel = isLow ? 'Estoque baixo' : 'Normal';
+          const statusClass = isLow
+            ? 'bg-rose-50 text-rose-500'
+            : 'bg-emerald-50 text-emerald-600';
+
+          return `
+            <tr class="hover:bg-slate-50/70 transition-colors">
+              <td class="py-3.5 px-6 whitespace-nowrap">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-xl ${p.iconBg} ${p.iconColor} flex items-center justify-center shrink-0">
+                    <i data-lucide="box" class="w-4 h-4"></i>
+                  </div>
+                  <span class="font-semibold text-slate-900">${p.name}</span>
+                </div>
+              </td>
+              <td class="py-3.5 px-6 text-slate-400 whitespace-nowrap">${p.sku}</td>
+              <td class="py-3.5 px-6 text-slate-600 whitespace-nowrap">${p.category}</td>
+              <td class="py-3.5 px-6 whitespace-nowrap">
+                <div class="font-semibold text-slate-900">${p.stock} un.</div>
+                <div class="text-[11px] text-slate-400">Mín. ${p.minStock}</div>
+              </td>
+              <td class="py-3.5 px-6 font-medium text-slate-800 whitespace-nowrap">${formatCurrency(p.price)}</td>
+              <td class="py-3.5 px-6 whitespace-nowrap">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11.5px] font-semibold ${statusClass}">
+                  ${statusLabel}
+                </span>
+              </td>
+              <td class="py-3.5 px-6 text-right whitespace-nowrap">
+                <div class="inline-flex items-center gap-3 text-[12.5px] font-medium">
+                  <button onclick="openProductModal(${p.id})" class="text-[#1D5BFF] hover:underline cursor-pointer">Editar</button>
+                  <button onclick="openDeleteModal(${p.id})" class="text-rose-500 hover:underline cursor-pointer">Excluir</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      const totalCatalog = baseProductCountOffset + products.length;
+      if (paginationInfo) {
+        paginationInfo.textContent = `Mostrando ${filtered.length} de ${totalCatalog} produtos`;
+      }
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    function setPage(page) {
+      currentPage = page;
+      [1, 2, 3].forEach(num => {
+        const btn = document.getElementById(`page-btn-${num}`);
+        if (!btn) return;
+        if (num === page) {
+          btn.className = 'page-btn w-8 h-8 rounded-lg bg-[#2563EB] text-white font-semibold transition-colors';
+        } else {
+          btn.className = 'page-btn w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 font-medium transition-colors';
+        }
+      });
+    }
+
+    function changePage(dir) {
+      if (dir === 'prev' && currentPage > 1) setPage(currentPage - 1);
+      if (dir === 'next' && currentPage < 3) setPage(currentPage + 1);
+    }
+
+    // 7. MODAL 1: NOVA MOVIMENTAÇÃO (TELA 3)
+    function openMovementModal() {
+      if (products.length === 0) {
+        showToast('Cadastre pelo menos um produto antes de registrar uma movimentação.');
+        openProductModal();
+        return;
+      }
+
+      const select = document.getElementById('movement-product-select');
+      const qtyInput = document.getElementById('movement-qty-input');
+      const refInput = document.getElementById('movement-ref-input');
+      const modal = document.getElementById('modal-movement');
+      if (!select || !modal) return;
+
+      select.innerHTML = products.map(p => `<option value="${p.id}">${p.name} (${p.stock} un.)</option>`).join('');
+      if (qtyInput) qtyInput.value = '';
+      if (refInput) refInput.value = '';
+      selectMovementType('Entrada');
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    function closeMovementModal() {
+      const modal = document.getElementById('modal-movement');
+      if (!modal) return;
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function selectMovementType(type) {
+      currentMovementType = type;
+      const btnEntrada = document.getElementById('btn-type-entrada');
+      const btnSaida = document.getElementById('btn-type-saida');
+      if (!btnEntrada || !btnSaida) return;
+
+      const activeClasses = ['border-[#2563EB]', 'bg-[#EEF4FF]/40', 'text-[#2563EB]', 'font-semibold'];
+      const inactiveClasses = ['border-slate-200', 'bg-white', 'text-slate-600', 'hover:bg-slate-50', 'font-medium'];
+
+      if (type === 'Entrada') {
+        btnEntrada.classList.remove(...inactiveClasses);
+        btnEntrada.classList.add(...activeClasses);
+        btnSaida.classList.remove(...activeClasses);
+        btnSaida.classList.add(...inactiveClasses);
+      } else {
+        btnSaida.classList.remove(...inactiveClasses);
+        btnSaida.classList.add(...activeClasses);
+        btnEntrada.classList.remove(...activeClasses);
+        btnEntrada.classList.add(...inactiveClasses);
+      }
+    }
+
+    function setMovementType(type) {
+      selectMovementType(type);
+    }
+
+    function saveMovement(e) {
+      if (e) e.preventDefault();
+      const selectEl = document.getElementById('movement-product-select');
+      const qtyEl = document.getElementById('movement-qty-input');
+      const refEl = document.getElementById('movement-ref-input');
+      if (!selectEl || !qtyEl || !refEl) return;
+
+      const productId = parseInt(selectEl.value, 10);
+      const qty = parseInt(qtyEl.value, 10);
+      const ref = refEl.value.trim();
+
+      if (!productId || isNaN(qty) || qty <= 0 || !ref) return;
+
+      const product = products.find(p => p.id === productId);
+      if (!product) return;
+
+      if (currentMovementType === 'Saída' && qty > product.stock) {
+        showToast(`Estoque insuficiente! Disponível: ${product.stock} un.`);
+        return;
+      }
+
+      if (currentMovementType === 'Entrada') {
+        product.stock += qty;
+        movEntradasMes += qty;
+      } else {
+        product.stock = Math.max(0, product.stock - qty);
+        movSaidasMes += qty;
+        movPedidosAtendidos += 1;
+      }
+
+      movements.unshift({
+        id: Date.now(),
+        type: currentMovementType,
+        product: product.name,
+        ref: ref,
+        qty: qty,
+        date: 'Agora mesmo',
+        user: getShortResponsibleName()
+      });
+
+      baseMonthMovements += 1;
+
+      updateDashboardMetrics();
+      renderProductsTable();
+      closeMovementModal();
+      showToast(`${currentMovementType} de ${qty} un. em "${product.name}" registrada!`);
+    }
+
+    // 8. MODAL 2: CADASTRAR / EDITAR PRODUTO
+    function openProductModal(productId = null) {
+      const titleEl = document.getElementById('product-modal-title');
+      const idInput = document.getElementById('product-edit-id');
+      const nameInput = document.getElementById('product-name-input');
+      const skuInput = document.getElementById('product-sku-input');
+      const catInput = document.getElementById('product-category-input');
+      const stockInput = document.getElementById('product-stock-input');
+      const minInput = document.getElementById('product-min-input');
+      const priceInput = document.getElementById('product-price-input');
+      const modal = document.getElementById('modal-product');
+      if (!modal || !titleEl || !idInput || !nameInput || !skuInput || !catInput || !stockInput || !minInput || !priceInput) return;
+
+      if (productId) {
+        const prod = products.find(p => p.id === productId);
+        if (!prod) return;
+        titleEl.textContent = 'Editar produto';
+        idInput.value = prod.id;
+        nameInput.value = prod.name;
+        skuInput.value = prod.sku;
+        catInput.value = prod.category;
+        stockInput.value = prod.stock;
+        minInput.value = prod.minStock;
+        priceInput.value = prod.price.toFixed(2).replace('.', ',');
+      } else {
+        titleEl.textContent = 'Cadastrar novo produto';
+        idInput.value = '';
+        nameInput.value = '';
+        skuInput.value = '';
+        catInput.value = 'Eletrônicos';
+        stockInput.value = '';
+        minInput.value = '10';
+        priceInput.value = '';
+      }
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    function closeProductModal() {
+      const modal = document.getElementById('modal-product');
+      if (!modal) return;
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function saveProduct(e) {
+      if (e) e.preventDefault();
+      const editIdEl = document.getElementById('product-edit-id');
+      const nameEl = document.getElementById('product-name-input');
+      const skuEl = document.getElementById('product-sku-input');
+      const catEl = document.getElementById('product-category-input');
+      const stockEl = document.getElementById('product-stock-input');
+      const minEl = document.getElementById('product-min-input');
+      const priceEl = document.getElementById('product-price-input');
+      if (!nameEl || !skuEl || !catEl || !stockEl || !minEl || !priceEl) return;
+
+      const editId = editIdEl ? editIdEl.value : '';
+      const name = nameEl.value.trim();
+      const sku = skuEl.value.trim().toUpperCase();
+      const category = catEl.value;
+      const stock = parseInt(stockEl.value, 10) || 0;
+      const minStock = parseInt(minEl.value, 10) || 1;
+      const price = parseBrazilianCurrency(priceEl.value);
+      const colors = getCategoryColors(category);
+
+      if (!name || !sku) return;
+
+      if (editId) {
+        const prod = products.find(p => p.id === parseInt(editId, 10));
+        if (prod) {
+          prod.name = name;
+          prod.sku = sku;
+          prod.category = category;
+          prod.stock = stock;
+          prod.minStock = minStock;
+          prod.price = price;
+          prod.iconBg = colors.bg;
+          prod.iconColor = colors.text;
+        }
+        showToast(`Produto "${name}" atualizado com sucesso!`);
+      } else {
+        products.unshift({
+          id: Date.now(),
+          name,
+          sku,
+          category,
+          stock,
+          minStock,
+          price,
+          iconBg: colors.bg,
+          iconColor: colors.text
+        });
+
+        if (stock > 0) {
+          movEntradasMes += stock;
+          baseMonthMovements += 1;
+          movements.unshift({
+            id: Date.now() + 1,
+            type: 'Entrada',
+            product: name,
+            ref: 'Saldo inicial',
+            qty: stock,
+            date: 'Agora mesmo',
+            user: getShortResponsibleName()
+          });
+        }
+
+        showToast(`Produto "${name}" cadastrado no catálogo!`);
+      }
+
+      updateDashboardMetrics();
+      renderProductsTable();
+      closeProductModal();
+    }
+
+    // 9. MODAL DE EXCLUSÃO DE PRODUTO
+    let pendingDeleteId = null;
+
+    function openDeleteModal(productId) {
+      const prod = products.find(p => p.id === productId);
+      const modal = document.getElementById('modal-delete');
+      const nameEl = document.getElementById('delete-product-name');
+      if (!prod || !modal) return;
+
+      pendingDeleteId = productId;
+      if (nameEl) nameEl.textContent = prod.name;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    function closeDeleteModal() {
+      pendingDeleteId = null;
+      const modal = document.getElementById('modal-delete');
+      if (!modal) return;
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function confirmDeleteProduct() {
+      if (!pendingDeleteId) return;
+      const prod = products.find(p => p.id === pendingDeleteId);
+      products = products.filter(p => p.id !== pendingDeleteId);
+      updateDashboardMetrics();
+      renderProductsTable();
+      closeDeleteModal();
+      if (prod) showToast(`Produto "${prod.name}" excluído.`);
+    }
+
+    // 10. BUSCA GLOBAL, NOTIFICAÇÕES, RELATÓRIOS E ASSISTENTE IA
+    function triggerCSVDownload(filename, csvContent) {
+      const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    function exportMovementsCSV() {
+      const headers = ['Tipo', 'Produto', 'Referência', 'Quantidade', 'Data e Hora', 'Responsável'];
+      const rows = movements.map(m => [
+        m.type,
+        `"${m.product}"`,
+        `"${m.ref}"`,
+        m.type === 'Entrada' ? `+${m.qty}` : `-${m.qty}`,
+        `"${m.date}"`,
+        `"${m.user}"`
+      ].join(';'));
+
+      triggerCSVDownload('smartstock_movimentacoes.csv', [headers.join(';'), ...rows].join('\n'));
+      showToast(movements.length === 0
+        ? 'Planilha CSV de movimentações (zerada) exportada!'
+        : 'Histórico de movimentações exportado em CSV!');
+    }
+
+    function downloadSpecificReport(type) {
+      let filename = 'relatorio_smartstock.csv';
+      let content = '';
+
+      if (type === 'posicao' || type === 'completo') {
+        filename = type === 'completo' ? 'smartstock_relatorio_completo.csv' : 'smartstock_posicao_estoque.csv';
+        const headers = ['SKU', 'Produto', 'Categoria', 'Estoque Atual', 'Estoque Mínimo', 'Valor Unitário (R$)', 'Valor Total (R$)', 'Status'];
+        const rows = products.map(p => [
+          p.sku,
+          `"${p.name}"`,
+          p.category,
+          p.stock,
+          p.minStock,
+          p.price.toFixed(2).replace('.', ','),
+          (p.stock * p.price).toFixed(2).replace('.', ','),
+          p.stock < p.minStock ? 'Estoque baixo' : 'Normal'
+        ].join(';'));
+        content = [headers.join(';'), ...rows].join('\n');
+      } else if (type === 'movimentacoes') {
+        exportMovementsCSV();
+        return;
+      } else if (type === 'criticos') {
+        filename = 'smartstock_produtos_abaixo_minimo.csv';
+        const headers = ['SKU', 'Produto', 'Categoria', 'Estoque Atual', 'Estoque Mínimo', 'Déficit'];
+        const criticos = products.filter(p => p.stock < p.minStock);
+        const rows = criticos.map(p => [
+          p.sku,
+          `"${p.name}"`,
+          p.category,
+          p.stock,
+          p.minStock,
+          p.minStock - p.stock
+        ].join(';'));
+        content = [headers.join(';'), ...rows].join('\n');
+      } else if (type === 'abc') {
+        filename = 'smartstock_curva_abc.csv';
+        const headers = ['SKU', 'Produto', 'Valor Imobilizado (R$)', 'Classificação ABC'];
+        const sorted = [...products].sort((a, b) => (b.stock * b.price) - (a.stock * a.price));
+        const rows = sorted.map((p, idx) => [
+          p.sku,
+          `"${p.name}"`,
+          (p.stock * p.price).toFixed(2).replace('.', ','),
+          idx < 2 ? 'Classe A' : (idx < 5 ? 'Classe B' : 'Classe C')
+        ].join(';'));
+        content = [headers.join(';'), ...rows].join('\n');
+      }
+
+      triggerCSVDownload(filename, content);
+      showToast(`Relatório "${filename}" baixado com sucesso!`);
+    }
+
+    function downloadReportCSV(type) {
+      downloadSpecificReport(type);
+    }
+
+    function openCreateReportModal() {
+      const modal = document.getElementById('modal-create-report');
+      if (!modal) return;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    function closeCreateReportModal() {
+      const modal = document.getElementById('modal-create-report');
+      if (!modal) return;
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function openReportModal() {
+      openCreateReportModal();
+    }
+
+    function closeReportModal() {
+      closeCreateReportModal();
+    }
+
+    function handleGenerateCustomReport(e) {
+      if (e) e.preventDefault();
+      const typeEl = document.getElementById('custom-report-type');
+      const type = typeEl ? typeEl.value : 'posicao';
+      closeCreateReportModal();
+      downloadSpecificReport(type);
+    }
+
+    function openCompleteReportPreview() {
+      const body = document.getElementById('complete-report-body');
+      const modal = document.getElementById('modal-report-preview');
+      if (!body || !modal) return;
+
+      const lowItems = products.filter(p => p.stock < p.minStock);
+      const totalValEl = document.getElementById('kpi-total-value');
+      const totalVal = totalValEl ? totalValEl.textContent : 'R$ 0,00';
+      const saldoPeriodo = movEntradasMes - movSaidasMes;
+      const saldoPrefix = saldoPeriodo > 0 ? '+' : '';
+
+      body.innerHTML = `
+        <div class="grid grid-cols-3 gap-3">
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+            <p class="text-[11.5px] text-slate-400">Valor em estoque</p>
+            <p class="text-[16px] font-bold text-slate-900 mt-1">${totalVal}</p>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+            <p class="text-[11.5px] text-slate-400">Saldo do período</p>
+            <p class="text-[16px] font-bold text-emerald-600 mt-1">${saldoPrefix}${saldoPeriodo} un.</p>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+            <p class="text-[11.5px] text-slate-400">Itens críticos</p>
+            <p class="text-[16px] font-bold text-rose-500 mt-1">${lowItems.length} produtos</p>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="font-semibold text-slate-900 mb-2">Resumo por produto cadastrado</h4>
+          <div class="border border-slate-200/80 rounded-xl overflow-hidden">
+            <table class="w-full text-left border-collapse text-[12px]">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 uppercase text-[10.5px]">
+                  <th class="py-2.5 px-4">Produto</th>
+                  <th class="py-2.5 px-4">Estoque</th>
+                  <th class="py-2.5 px-4">Total Imobilizado</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                ${products.length === 0
+                  ? `<tr><td colspan="3" class="py-6 px-4 text-center text-slate-400">Nenhum produto cadastrado no momento.</td></tr>`
+                  : products.map(p => `
+                    <tr>
+                      <td class="py-2.5 px-4 font-medium text-slate-800">${p.name} <span class="text-slate-400">(${p.sku})</span></td>
+                      <td class="py-2.5 px-4 ${p.stock < p.minStock ? 'text-rose-500 font-semibold' : 'text-slate-600'}">${p.stock} un.</td>
+                      <td class="py-2.5 px-4 font-medium text-slate-800">${formatCurrency(p.stock * p.price)}</td>
+                    </tr>
+                  `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    function closeCompleteReportPreview() {
+      const modal = document.getElementById('modal-report-preview');
+      if (!modal) return;
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function handleGlobalSearch(e) {
+      if (!e || !e.target) return;
+      const val = e.target.value;
+      if (e.key === 'Enter' && val.trim() !== '') {
+        navigateTo('produtos');
+        const prodSearch = document.getElementById('product-search-input');
+        if (prodSearch) prodSearch.value = val;
+        renderProductsTable();
+      }
+    }
+
+    function toggleNotificationsPopover() {
+      const pop = document.getElementById('notifications-popover');
+      if (!pop) return;
+      pop.classList.toggle('hidden');
+    }
+
+    function toggleNotifications() {
+      toggleNotificationsPopover();
+    }
+
+    function askAssistant() {
+      const input = document.getElementById('ia-prompt-input');
+      const box = document.getElementById('ia-insights-box');
+      if (!input || !box) return;
+
+      const question = input.value.trim();
+      if (!question) return;
+
+      if (products.length === 0) {
+        box.innerHTML += `
+          <div class="pt-2.5 border-t border-slate-200/70">
+            <p class="text-[12px] text-slate-400">Você perguntou: "${question}"</p>
+            <p class="mt-1 text-slate-800">Ainda não há produtos ou movimentações cadastrados no sistema. Assim que você registrar seus primeiros itens, poderei calcular reposições, giro e valor imobilizado.</p>
+          </div>
+        `;
+        input.value = '';
+        box.scrollTop = box.scrollHeight;
+        return;
+      }
+
+      const lowItems = products.filter(p => p.stock < p.minStock).map(p => p.name).join(', ');
+      const totalValEl = document.getElementById('kpi-total-value');
+      const totalVal = totalValEl ? totalValEl.textContent : 'R$ 0,00';
+      const saldo = movEntradasMes - movSaidasMes;
+
+      box.innerHTML += `
+        <div class="pt-2.5 border-t border-slate-200/70">
+          <p class="text-[12px] text-slate-400">Você perguntou: "${question}"</p>
+          <p class="mt-1 text-slate-800">Com base nos dados atuais (${products.length} ${products.length === 1 ? 'produto' : 'produtos'}), os itens prioritários para reposição são: <strong>${lowItems || 'nenhum no momento'}</strong>. O valor total imobilizado em estoque é de <strong>${totalVal}</strong> e o saldo do período é de <strong>${saldo >= 0 ? '+' : ''}${saldo} un.</strong>.</p>
+        </div>
+      `;
+      input.value = '';
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function sendAssistantMessage() {
+      askAssistant();
+    }
+
+    let toastTimeout = null;
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      const msgEl = document.getElementById('toast-message');
+      if (!toast || !msgEl) return;
+
+      msgEl.textContent = msg;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3200);
+    }
+
+    // 10B. CONFIGURAÇÕES DA CONTA DE ADMINISTRADOR
+    function syncProfileUI() {
+      const initials = getUserInitials(adminProfile.name);
+      const firstName = adminProfile.name.trim().split(/\s+/)[0] || 'Rafael';
+
+      const sidebarName = document.getElementById('sidebar-user-name');
+      const sidebarRole = document.getElementById('sidebar-user-role');
+      const dashFirst = document.getElementById('dashboard-first-name');
+      const cardName = document.getElementById('profile-card-name');
+      const cardRole = document.getElementById('profile-card-role');
+
+      if (sidebarName) sidebarName.textContent = adminProfile.name;
+      if (sidebarRole) sidebarRole.textContent = adminProfile.role;
+      if (dashFirst) dashFirst.textContent = firstName;
+      if (cardName) cardName.textContent = adminProfile.name;
+      if (cardRole) cardRole.textContent = `${adminProfile.role} • SmartStock`;
+
+      const avatarContainers = [
+        document.getElementById('header-avatar'),
+        document.getElementById('sidebar-avatar'),
+        document.getElementById('profile-preview-avatar')
+      ];
+
+      avatarContainers.forEach(el => {
+        if (!el) return;
+        if (adminProfile.photoUrl) {
+          el.innerHTML = `<img src="${adminProfile.photoUrl}" alt="${adminProfile.name}" class="w-full h-full object-cover" />`;
+        } else {
+          el.textContent = initials;
+        }
+      });
+
+      const removeBtn = document.getElementById('btn-remove-photo');
+      if (removeBtn) {
+        if (adminProfile.photoUrl) removeBtn.classList.remove('hidden');
+        else removeBtn.classList.add('hidden');
+      }
+    }
+
+    function populateProfileForm() {
+      const nameInput = document.getElementById('profile-name-input');
+      const roleInput = document.getElementById('profile-role-input');
+      const emailInput = document.getElementById('profile-email-input');
+      const phoneInput = document.getElementById('profile-phone-input');
+      const companyInput = document.getElementById('profile-company-input');
+      const deptInput = document.getElementById('profile-dept-input');
+      const alertsCheckbox = document.getElementById('profile-alerts-email');
+      const passInput = document.getElementById('profile-password-input');
+      const passConfirm = document.getElementById('profile-password-confirm');
+
+      if (nameInput) nameInput.value = adminProfile.name;
+      if (roleInput) roleInput.value = adminProfile.role;
+      if (emailInput) emailInput.value = adminProfile.email;
+      if (phoneInput) phoneInput.value = adminProfile.phone;
+      if (companyInput) companyInput.value = adminProfile.company;
+      if (deptInput) deptInput.value = adminProfile.department;
+      if (alertsCheckbox) alertsCheckbox.checked = adminProfile.emailAlerts;
+      if (passInput) passInput.value = '';
+      if (passConfirm) passConfirm.value = '';
+      syncProfileUI();
+    }
+
+    function resetProfileForm() {
+      populateProfileForm();
+      showToast('Alterações descartadas.');
+    }
+
+    function handleProfilePhotoUpload(e) {
+      const file = e.target?.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        adminProfile.photoUrl = evt.target.result;
+        syncProfileUI();
+        showToast('Foto de perfil atualizada!');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeProfilePhoto() {
+      adminProfile.photoUrl = null;
+      const input = document.getElementById('profile-photo-input');
+      if (input) input.value = '';
+      syncProfileUI();
+      showToast('Foto removida. Iniciais restauradas.');
+    }
+
+    function saveAdminProfile(e) {
+      if (e) e.preventDefault();
+      const name = document.getElementById('profile-name-input')?.value.trim();
+      const role = document.getElementById('profile-role-input')?.value.trim();
+      const email = document.getElementById('profile-email-input')?.value.trim();
+      const phone = document.getElementById('profile-phone-input')?.value.trim();
+      const company = document.getElementById('profile-company-input')?.value.trim();
+      const department = document.getElementById('profile-dept-input')?.value.trim();
+      const emailAlerts = document.getElementById('profile-alerts-email')?.checked ?? true;
+      const pass = document.getElementById('profile-password-input')?.value || '';
+      const passConfirm = document.getElementById('profile-password-confirm')?.value || '';
+
+      if (!name || !email) return;
+
+      if (pass && pass !== passConfirm) {
+        showToast('As senhas digitadas não coincidem.');
+        return;
+      }
+
+      adminProfile.name = name;
+      adminProfile.role = role || 'Administrador';
+      adminProfile.email = email;
+      adminProfile.phone = phone;
+      adminProfile.company = company;
+      adminProfile.department = department;
+      adminProfile.emailAlerts = emailAlerts;
+
+      if (pass) {
+        document.getElementById('profile-password-input').value = '';
+        document.getElementById('profile-password-confirm').value = '';
+      }
+
+      syncProfileUI();
+      showToast('Configurações da conta salvas com sucesso!');
+    }
+
+    // Fechar modais/popovers ao clicar fora
+    window.addEventListener('click', (e) => {
+      if (!e || !e.target) return;
+      if (e.target.id === 'modal-movement') closeMovementModal();
+      if (e.target.id === 'modal-product') closeProductModal();
+      if (e.target.id === 'modal-delete') closeDeleteModal();
+      if (e.target.id === 'modal-create-report') closeCreateReportModal();
+      if (e.target.id === 'modal-report-preview') closeCompleteReportPreview();
+
+      const pop = document.getElementById('notifications-popover');
+      if (pop && !pop.classList.contains('hidden')) {
+        if (!e.target.closest('#notifications-popover') && !e.target.closest('button[onclick*="toggleNotifications"]')) {
+          pop.classList.add('hidden');
+        }
+      }
+    });
+
+    // Expor todas as funções no escopo global (window)
+    Object.assign(window, {
+      navigateTo,
+      toggleMobileSidebar,
+      updateChartPeriod,
+      renderProductsTable,
+      setPage,
+      changePage,
+      openMovementModal,
+      closeMovementModal,
+      selectMovementType,
+      setMovementType,
+      saveMovement,
+      openProductModal,
+      closeProductModal,
+      saveProduct,
+      openDeleteModal,
+      closeDeleteModal,
+      confirmDeleteProduct,
+      exportMovementsCSV,
+      downloadSpecificReport,
+      downloadReportCSV,
+      openCreateReportModal,
+      closeCreateReportModal,
+      openReportModal,
+      closeReportModal,
+      handleGenerateCustomReport,
+      openCompleteReportPreview,
+      closeCompleteReportPreview,
+      handleGlobalSearch,
+      toggleNotificationsPopover,
+      toggleNotifications,
+      askAssistant,
+      sendAssistantMessage,
+      showToast,
+      handleProfilePhotoUpload,
+      removeProfilePhoto,
+      saveAdminProfile,
+      resetProfileForm
+    });
+
+    // 11. INICIALIZAÇÃO
+    window.addEventListener('DOMContentLoaded', () => {
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+      syncProfileUI();
+      initStockChart();
+      updateDashboardMetrics();
+      renderProductsTable();
+    });
+  </script>
+</body>
+</html>
